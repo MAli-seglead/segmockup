@@ -78,6 +78,14 @@ type GeneratedMockupContent = {
   backgroundImageSuggestions?: string;
 };
 
+type StockImagesResponse = {
+  heroImage?: string;
+  galleryImages?: string;
+  serviceImages?: string;
+  teamImages?: string;
+  backgroundImages?: string;
+};
+
 type ImageSuggestions = {
   logoImage: string;
   heroImage: string;
@@ -178,18 +186,27 @@ const starters: Starter[] = [
 const promptStarters = [
   {
     label: "Dentist",
+    industry: "dentist" as Industry,
     value:
       "Premium dentist clinic in Istanbul for families and professionals. Needs a calm, trustworthy website focused on appointments, treatments, and patient confidence.",
+    assets:
+      "Hero: modern dental clinic reception calm daylight premium. Gallery: dentist consultation, clean treatment room, patient smile, premium clinic interior. Avoid: scary dental tools, surgery, cartoon teeth.",
   },
   {
     label: "Salon",
+    industry: "salon" as Industry,
     value:
       "Boutique beauty salon for style-conscious clients. Needs an elegant visual website focused on services, atmosphere, gallery proof, and easy reservations.",
+    assets:
+      "Hero: luxury beauty salon interior warm light boutique. Gallery: hair styling, skincare room, nail design detail, elegant reception. Avoid: messy salon, harsh white stock photos.",
   },
   {
     label: "Car Rental",
+    industry: "car" as Industry,
     value:
       "Premium car rental and sales business with luxury SUVs, executive sedans, and sports cars. Needs a sharp website focused on enquiries and vehicle presentation.",
+    assets:
+      "Hero: luxury car dealership showroom dark premium. Gallery: random BMW, Mercedes, Audi, SUV, executive sedan, sports car photos. Avoid: mechanic, repair shop, cheap rental cars.",
   },
 ];
 
@@ -242,6 +259,65 @@ function cn(...classes: Array<string | false | undefined>) {
 
 function safeColor(value: string, fallback = "#55f5c6") {
   return /^#[0-9a-f]{6}$/i.test(value) ? value : fallback;
+}
+
+function inferIndustryFromPrompt(text: string, fallback: Industry): Industry {
+  const value = text.toLowerCase();
+
+  const carTerms = [
+    "car",
+    "cars",
+    "dealership",
+    "dealer",
+    "auto",
+    "automotive",
+    "vehicle",
+    "vehicles",
+    "rental",
+    "rent a car",
+    "bmw",
+    "mercedes",
+    "audi",
+    "suv",
+    "sedan",
+    "sports car",
+    "showroom",
+  ];
+
+  const salonTerms = [
+    "salon",
+    "beauty",
+    "hair",
+    "nail",
+    "skincare",
+    "spa",
+    "barber",
+    "makeup",
+    "lashes",
+    "brows",
+  ];
+
+  const dentistTerms = [
+    "dentist",
+    "dental",
+    "clinic",
+    "teeth",
+    "tooth",
+    "implant",
+    "whitening",
+    "orthodontic",
+    "smile",
+  ];
+
+  const hasCar = carTerms.some((term) => value.includes(term));
+  const hasSalon = salonTerms.some((term) => value.includes(term));
+  const hasDentist = dentistTerms.some((term) => value.includes(term));
+
+  if (hasCar) return "car";
+  if (hasSalon) return "salon";
+  if (hasDentist) return "dentist";
+
+  return fallback;
 }
 
 function TextField({
@@ -442,9 +518,7 @@ function readImageFile(file: File) {
 }
 
 function splitImageList(value: string) {
-  if (!value.trim()) {
-    return [];
-  }
+  if (!value.trim()) return [];
 
   if (value.includes(imageDelimiter)) {
     return value
@@ -453,9 +527,7 @@ function splitImageList(value: string) {
       .filter(Boolean);
   }
 
-  if (value.startsWith("data:")) {
-    return [value];
-  }
+  if (value.startsWith("data:")) return [value];
 
   return value
     .split(",")
@@ -498,9 +570,7 @@ function ImageDropzone({
       file.type.startsWith("image/"),
     );
 
-    if (imageFiles.length === 0) {
-      return;
-    }
+    if (imageFiles.length === 0) return;
 
     const dataUrls = await Promise.all(imageFiles.map(readImageFile));
 
@@ -620,6 +690,8 @@ export default function MockupPage() {
   const [reviews, setReviews] = useState("");
 
   const [clientContext, setClientContext] = useState("");
+  const [assetInstructions, setAssetInstructions] = useState("");
+  const [autoImages, setAutoImages] = useState(true);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
   const [mode, setMode] = useState<"ai" | "manual">("ai");
@@ -651,9 +723,10 @@ export default function MockupPage() {
   const readinessPercent = Math.round(
     (helpfulFields / readinessItems.length) * 100,
   );
+
   const promptStrength = Math.min(
     100,
-    Math.round((clientContext.trim().length / 240) * 100),
+    Math.round(((clientContext + assetInstructions).trim().length / 320) * 100),
   );
 
   function applyStarter(starter: Starter) {
@@ -736,6 +809,10 @@ export default function MockupPage() {
   }
 
   function applyGeneratedContent(content: GeneratedMockupContent) {
+    const combinedPrompt = `${clientContext} ${assetInstructions}`;
+    const detectedIndustry = inferIndustryFromPrompt(combinedPrompt, industry);
+
+    setIndustry(detectedIndustry);
     setBusinessName(content.businessName);
     setLogoText(content.logoText);
     setSlogan(content.slogan);
@@ -788,16 +865,52 @@ export default function MockupPage() {
     });
   }
 
+  async function applyStockImages(content: GeneratedMockupContent) {
+    if (!autoImages) return;
+
+    try {
+      const response = await fetch("/api/stock-images", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          hero: content.heroImageSuggestion,
+          gallery: content.galleryImageSuggestions,
+          services: content.serviceImageSuggestions,
+          team: content.teamImageSuggestions,
+          background: content.backgroundImageSuggestions,
+        }),
+      });
+
+      if (!response.ok) return;
+
+      const images = (await response.json()) as StockImagesResponse;
+
+      if (images.heroImage) setHeroImage(images.heroImage);
+      if (images.galleryImages) setGalleryImages(images.galleryImages);
+      if (images.serviceImages) setServiceImages(images.serviceImages);
+      if (images.teamImages) setTeamImages(images.teamImages);
+      if (images.backgroundImages) setBackgroundImages(images.backgroundImages);
+    } catch {
+      // Keep generated content even when stock image fetching fails.
+    }
+  }
+
   function suggestImageDirection() {
+    const combinedPrompt = `${clientContext} ${assetInstructions}`;
+    const detectedIndustry = inferIndustryFromPrompt(combinedPrompt, industry);
     const subject =
-      clientContext || heroDescription || heroHeadline || businessName || industry;
+      combinedPrompt || heroDescription || heroHeadline || businessName || detectedIndustry;
 
     const tone =
-      industry === "car"
+      detectedIndustry === "car"
         ? "premium automotive showroom, dark metallic finish, cinematic lighting"
-        : industry === "salon"
+        : detectedIndustry === "salon"
           ? "luxury salon, champagne light, elegant boutique interior"
           : "premium clinic, calm daylight, clean trustworthy atmosphere";
+
+    setIndustry(detectedIndustry);
 
     setImageSuggestions({
       logoImage: `Logo direction: refined ${businessName || "client"} monogram, minimal ${tone}.`,
@@ -812,12 +925,16 @@ export default function MockupPage() {
   async function generateWithAi() {
     setAiError("");
 
-    if (!clientContext.trim()) {
-      setAiError("Add a short client context first.");
+    if (!clientContext.trim() && !assetInstructions.trim()) {
+      setAiError("Add a client brief or image instructions first.");
       return;
     }
 
     setAiLoading(true);
+
+    const combinedPrompt = `${clientContext} ${assetInstructions}`;
+    const detectedIndustry = inferIndustryFromPrompt(combinedPrompt, industry);
+    setIndustry(detectedIndustry);
 
     try {
       const response = await fetch("/api/generate-mockup", {
@@ -826,8 +943,12 @@ export default function MockupPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          clientContext,
-          industry,
+          clientContext:
+            clientContext.trim() ||
+            `Create a premium ${detectedIndustry} website mockup.`,
+          assetInstructions,
+          industry: detectedIndustry,
+          autoImages,
         }),
       });
 
@@ -847,7 +968,9 @@ export default function MockupPage() {
         );
       }
 
-      applyGeneratedContent(result as GeneratedMockupContent);
+      const content = result as GeneratedMockupContent;
+      applyGeneratedContent(content);
+      await applyStockImages(content);
     } catch (error) {
       setAiError(
         error instanceof Error
@@ -860,6 +983,11 @@ export default function MockupPage() {
   }
 
   function generateMockup() {
+    const finalIndustry = inferIndustryFromPrompt(
+      `${clientContext} ${assetInstructions} ${businessName} ${services}`,
+      industry,
+    );
+
     const imageSession =
       typeof crypto !== "undefined" && "randomUUID" in crypto
         ? crypto.randomUUID()
@@ -879,7 +1007,7 @@ export default function MockupPage() {
 
     const params = new URLSearchParams({
       businessName: businessName || "Client Business",
-      industry,
+      industry: finalIndustry,
       primary: primaryColor,
       secondary: secondaryColor,
       accent: accentColor,
@@ -928,7 +1056,7 @@ export default function MockupPage() {
           label="Business name"
           value={businessName}
           onChange={setBusinessName}
-          placeholder="CCS Dental"
+          placeholder="SegLead Motors"
           helper="Used in the logo, hero, reviews, and contact area."
         />
 
@@ -937,14 +1065,14 @@ export default function MockupPage() {
           value={industry}
           onChange={(value) => setIndustry(value as Industry)}
           options={industries}
-          helper="Changes the structure and default visual logic."
+          helper="AI can also auto-switch this based on your prompt."
         />
 
         <TextField
           label="Hero headline"
           value={heroHeadline}
           onChange={setHeroHeadline}
-          placeholder="Premium dental care for modern families"
+          placeholder="Premium cars for drivers who expect more"
           helper="The main headline visitors see first."
         />
 
@@ -952,7 +1080,7 @@ export default function MockupPage() {
           label="Hero description"
           value={heroDescription}
           onChange={setHeroDescription}
-          placeholder="Clear dental care for families and professionals."
+          placeholder="Luxury rentals and curated vehicle sales in Istanbul."
           helper="One clear sentence about who this is for and why it matters."
         />
 
@@ -960,7 +1088,7 @@ export default function MockupPage() {
           label="Services"
           value={services}
           onChange={setServices}
-          placeholder="Whitening, Implants, Braces"
+          placeholder="Luxury SUV, Executive Sedan, Sports Coupe"
           helper="Separate each service with a comma."
         />
 
@@ -968,7 +1096,7 @@ export default function MockupPage() {
           label="Main CTA"
           value={mainCta}
           onChange={setMainCta}
-          placeholder="Book Free Consultation"
+          placeholder="Book A Viewing"
           helper="The main conversion button."
         />
       </div>
@@ -978,15 +1106,14 @@ export default function MockupPage() {
           label="Services section title"
           value={servicesTitle}
           onChange={setServicesTitle}
-          placeholder="Signature services"
-          helper="Title above the service cards."
+          placeholder="Featured inventory"
         />
 
         <TextField
           label="Service descriptions"
           value={serviceDescriptions}
           onChange={setServiceDescriptions}
-          placeholder="Benefit one; Benefit two; Benefit three"
+          placeholder="Premium SUVs ready for enquiry; Executive sedans for business travel; Sports cars for weekend drives"
           helper="Separate each description with a semicolon."
         />
 
@@ -994,39 +1121,35 @@ export default function MockupPage() {
           label="Gallery title"
           value={galleryTitle}
           onChange={setGalleryTitle}
-          placeholder="A visual reason to book"
-          helper="Title above the image section."
+          placeholder="Angles worth seeing in person"
         />
 
         <TextField
           label="Testimonials title"
           value={testimonialsTitle}
           onChange={setTestimonialsTitle}
-          placeholder="Client words that build trust"
-          helper="Title above the review section."
+          placeholder="What drivers say after the handover"
         />
 
         <TextField
           label="Contact title"
           value={contactTitle}
           onChange={setContactTitle}
-          placeholder="Make the next step feel obvious"
-          helper="Title above the final CTA/contact section."
+          placeholder="Reserve the car before it moves"
         />
 
         <TextField
           label="Brand tone"
           value={brandTone}
           onChange={setBrandTone}
-          placeholder="Calm, premium, reassuring, and direct."
-          helper="Helps the preview feel intentional."
+          placeholder="Strong, precise, premium, and automotive-led."
         />
 
         <TextField
           label="Color suggestions"
           value={colorSuggestions}
           onChange={setColorSuggestions}
-          placeholder="Use soft teal accents over a dark premium base."
+          placeholder="Use teal accents over a dark premium base."
           rows={3}
         />
 
@@ -1034,7 +1157,7 @@ export default function MockupPage() {
           label="Layout suggestions"
           value={layoutSuggestions}
           onChange={setLayoutSuggestions}
-          placeholder="Lead with a strong hero, then services, trust proof, gallery, and CTA."
+          placeholder="Lead with a dealership hero, inventory, trust proof, gallery, and enquiry CTA."
           rows={3}
         />
       </div>
@@ -1044,32 +1167,28 @@ export default function MockupPage() {
           label="Logo text"
           value={logoText}
           onChange={setLogoText}
-          placeholder="CCS Dental"
-          helper="Shown in the website header."
+          placeholder="SegLead Motors"
         />
 
         <TextField
           label="Slogan"
           value={slogan}
           onChange={setSlogan}
-          placeholder="Calm, modern dental care."
-          helper="Used as an eyebrow or brand line."
+          placeholder="Selected cars. Serious presence."
         />
 
         <TextField
           label="Special offer"
           value={specialOffer}
           onChange={setSpecialOffer}
-          placeholder="Free smile assessment this month"
-          helper="Small promo badge in the hero."
+          placeholder="Priority handover slots this week"
         />
 
         <TextField
           label="Audience"
           value={audience}
           onChange={setAudience}
-          placeholder="Families, professionals, and cosmetic treatment clients"
-          helper="Used to sharpen positioning."
+          placeholder="Luxury buyers, business travelers, and weekend drivers"
         />
 
         <div className="md:col-span-2">
@@ -1077,7 +1196,7 @@ export default function MockupPage() {
             label="Reviews"
             value={reviews}
             onChange={setReviews}
-            placeholder="The visit felt calm | Booking was simple | The clinic felt trustworthy"
+            placeholder="The car was ready and immaculate | The handover felt premium | Choosing a model was easy"
             helper="Separate each review with a vertical bar."
             rows={3}
           />
@@ -1089,14 +1208,14 @@ export default function MockupPage() {
           label="About title"
           value={aboutTitle}
           onChange={setAboutTitle}
-          placeholder="A calmer clinic experience from first visit"
+          placeholder="A sharper way to choose your next drive"
         />
 
         <TextField
           label="Secondary CTA"
           value={secondaryCta}
           onChange={setSecondaryCta}
-          placeholder="View Services"
+          placeholder="View Cars"
         />
 
         <div className="md:col-span-2">
@@ -1104,7 +1223,7 @@ export default function MockupPage() {
             label="About text"
             value={aboutText}
             onChange={setAboutText}
-            placeholder="Explain what makes the business credible, personal, and worth booking."
+            placeholder="Explain what makes the business credible, premium, and worth booking."
             rows={5}
           />
         </div>
@@ -1140,8 +1259,7 @@ export default function MockupPage() {
               Image direction helper
             </p>
             <p className="mt-1 text-sm leading-6 text-white/42">
-              Generate visual guidance from the current client context. Use it
-              for AI image tools or as notes for manual asset selection.
+              Generate visual guidance from your brief and image instructions.
             </p>
           </div>
 
@@ -1261,8 +1379,8 @@ export default function MockupPage() {
               </h1>
 
               <p className="mt-4 text-sm leading-6 text-white/42">
-                Use AI for the first draft, then fine-tune manually only where
-                needed.
+                Write naturally. The AI will detect car, salon, or dentist from
+                your prompt.
               </p>
 
               <div className="mt-6 rounded-xl border border-white/10 bg-black/25 p-1.5">
@@ -1353,7 +1471,7 @@ export default function MockupPage() {
                 <Section
                   eyebrow="AI Studio"
                   title="Premium brief composer"
-                  description="Describe the client once. AI will create the first draft, then you can adjust every field before previewing."
+                  description="Describe the business and the images separately. The AI will auto-select the right industry and fetch matching images when enabled."
                   action={
                     <div className="rounded-full border border-[#55f5c6]/20 bg-[#55f5c6]/[0.06] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-[#55f5c6]">
                       Prompt {promptStrength}%
@@ -1361,30 +1479,34 @@ export default function MockupPage() {
                   }
                 >
                   <div className="grid gap-5 lg:grid-cols-[1fr_240px]">
-                    <div>
+                    <div className="space-y-5">
                       <TextField
-                        label="Client context"
+                        label="Client brief"
                         value={clientContext}
                         onChange={setClientContext}
-                        placeholder="Example: Premium dentist clinic in Istanbul for families and professionals. Wants a calm trustworthy website focused on appointments."
-                        rows={7}
-                        helper="Mention the business type, audience, tone, offer, services, location, and booking goal."
+                        placeholder="Example: Business name is SegLead Motors. Premium car rental and dealership in Istanbul. Needs a luxury website for WhatsApp enquiries."
+                        rows={6}
+                        helper="Mention name, business type, location, audience, services, and goal."
                       />
 
-                      <div className="mt-4 flex flex-wrap gap-2">
+                      <TextField
+                        label="Image instructions"
+                        value={assetInstructions}
+                        onChange={setAssetInstructions}
+                        placeholder="Hero: luxury car dealership showroom. Gallery: random BMW, Mercedes, Audi, sports car photos. Avoid: mechanic, repair shop, cheap rental car images."
+                        rows={5}
+                        helper="Tell the AI exactly what hero, gallery, service, team, and background images should look like."
+                      />
+
+                      <div className="flex flex-wrap gap-2">
                         {promptStarters.map((prompt) => (
                           <button
                             key={prompt.label}
                             type="button"
                             onClick={() => {
                               setClientContext(prompt.value);
-                              setIndustry(
-                                prompt.label === "Salon"
-                                  ? "salon"
-                                  : prompt.label === "Car Rental"
-                                    ? "car"
-                                    : "dentist",
-                              );
+                              setAssetInstructions(prompt.assets);
+                              setIndustry(prompt.industry);
                             }}
                             className="rounded-full border border-white/10 bg-white/[0.035] px-3 py-2 text-[11px] font-black uppercase tracking-[0.14em] text-white/50 transition hover:border-[#55f5c6]/45 hover:text-[#55f5c6]"
                           >
@@ -1400,19 +1522,28 @@ export default function MockupPage() {
                       </p>
 
                       <p className="mt-4 text-2xl font-semibold leading-none tracking-[-0.04em] text-white">
-                        Strategy, copy, sections and visual direction.
+                        Copy, sections, colors, image queries, and real stock
+                        images.
                       </p>
 
-                      <p className="mt-4 text-sm leading-6 text-white/42">
-                        Best results come from a specific brief with audience,
-                        tone, services, and conversion goal.
-                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setAutoImages((value) => !value)}
+                        className={cn(
+                          "mt-5 w-full rounded-full border px-4 py-2 text-[11px] font-black uppercase tracking-[0.14em] transition",
+                          autoImages
+                            ? "border-[#55f5c6]/45 bg-[#55f5c6]/10 text-[#55f5c6]"
+                            : "border-white/10 bg-white/[0.035] text-white/40",
+                        )}
+                      >
+                        {autoImages ? "Auto images on" : "Auto images off"}
+                      </button>
 
                       <button
                         type="button"
                         onClick={generateWithAi}
                         disabled={aiLoading}
-                        className="mt-6 w-full rounded-sm bg-[#55f5c6] px-5 py-4 text-[12px] font-black uppercase tracking-[0.14em] text-[#03110d] shadow-[0_0_30px_rgba(85,245,198,0.16)] transition hover:-translate-y-0.5 hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+                        className="mt-4 w-full rounded-sm bg-[#55f5c6] px-5 py-4 text-[12px] font-black uppercase tracking-[0.14em] text-[#03110d] shadow-[0_0_30px_rgba(85,245,198,0.16)] transition hover:-translate-y-0.5 hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {aiLoading ? "Generating..." : "Generate with AI"}
                       </button>
@@ -1429,7 +1560,7 @@ export default function MockupPage() {
                 <Section
                   eyebrow="Review"
                   title="AI result editor"
-                  description="Keep AI mode premium by showing the important review fields in groups instead of one long form."
+                  description="After generating, review and tweak the important fields before opening the final preview."
                 >
                   <div className="space-y-3">
                     <DetailGroup
@@ -1442,7 +1573,7 @@ export default function MockupPage() {
                           label="Business name"
                           value={businessName}
                           onChange={setBusinessName}
-                          placeholder="CCS Dental"
+                          placeholder="SegLead Motors"
                         />
 
                         <SelectField
@@ -1456,154 +1587,39 @@ export default function MockupPage() {
                           label="Hero headline"
                           value={heroHeadline}
                           onChange={setHeroHeadline}
-                          placeholder="Premium dental care for modern families"
+                          placeholder="Premium cars for drivers who expect more"
                         />
 
                         <TextField
                           label="Hero description"
                           value={heroDescription}
                           onChange={setHeroDescription}
-                          placeholder="Premium dental care for families and professionals."
+                          placeholder="Luxury rentals and curated sales in Istanbul."
                         />
 
                         <TextField
                           label="Services"
                           value={services}
                           onChange={setServices}
-                          placeholder="Whitening, Implants, Braces"
+                          placeholder="Luxury SUV, Executive Sedan, Sports Coupe"
                         />
 
                         <TextField
                           label="Main CTA"
                           value={mainCta}
                           onChange={setMainCta}
-                          placeholder="Book Free Consultation"
+                          placeholder="Book A Viewing"
                         />
                       </div>
                     </DetailGroup>
 
                     <DetailGroup
-                      title="Strategy and section plan"
-                      description="Tone, section titles, service descriptions, and layout logic."
+                      title="Images"
+                      description="Fetched images and generated image directions."
                     >
-                      <div className="grid gap-5 md:grid-cols-2">
-                        <TextField
-                          label="Services title"
-                          value={servicesTitle}
-                          onChange={setServicesTitle}
-                          placeholder="Signature services"
-                        />
-
-                        <TextField
-                          label="Gallery title"
-                          value={galleryTitle}
-                          onChange={setGalleryTitle}
-                          placeholder="A visual reason to book"
-                        />
-
-                        <TextField
-                          label="Testimonials title"
-                          value={testimonialsTitle}
-                          onChange={setTestimonialsTitle}
-                          placeholder="Client words that build trust"
-                        />
-
-                        <TextField
-                          label="Contact title"
-                          value={contactTitle}
-                          onChange={setContactTitle}
-                          placeholder="Make the next step feel obvious"
-                        />
-
-                        <TextField
-                          label="Brand tone"
-                          value={brandTone}
-                          onChange={setBrandTone}
-                          placeholder="Calm, premium, reassuring, and direct."
-                        />
-
-                        <TextField
-                          label="Service descriptions"
-                          value={serviceDescriptions}
-                          onChange={setServiceDescriptions}
-                          placeholder="Benefit one; Benefit two; Benefit three"
-                        />
-
-                        <TextField
-                          label="Color suggestions"
-                          value={colorSuggestions}
-                          onChange={setColorSuggestions}
-                          placeholder="Use teal accents over a dark premium base."
-                          rows={3}
-                        />
-
-                        <TextField
-                          label="Layout suggestions"
-                          value={layoutSuggestions}
-                          onChange={setLayoutSuggestions}
-                          placeholder="Lead with a strong hero, then services, trust proof, gallery, and CTA."
-                          rows={3}
-                        />
-                      </div>
-                    </DetailGroup>
-
-                    <DetailGroup
-                      title="Brand, trust and contact"
-                      description="Offer, audience, reviews, location, and phone details."
-                    >
-                      <div className="grid gap-5 md:grid-cols-2">
-                        <TextField
-                          label="Logo text"
-                          value={logoText}
-                          onChange={setLogoText}
-                          placeholder="CCS Dental"
-                        />
-
-                        <TextField
-                          label="Slogan"
-                          value={slogan}
-                          onChange={setSlogan}
-                          placeholder="Calm, modern dental care."
-                        />
-
-                        <TextField
-                          label="Special offer"
-                          value={specialOffer}
-                          onChange={setSpecialOffer}
-                          placeholder="Free smile assessment this month"
-                        />
-
-                        <TextField
-                          label="Audience"
-                          value={audience}
-                          onChange={setAudience}
-                          placeholder="Families, professionals, and cosmetic treatment clients"
-                        />
-
-                        <TextField
-                          label="Phone"
-                          value={phone}
-                          onChange={setPhone}
-                          placeholder="+90 555 000 00 00"
-                        />
-
-                        <TextField
-                          label="Location"
-                          value={location}
-                          onChange={setLocation}
-                          placeholder="Istanbul, Turkey"
-                        />
-
-                        <div className="md:col-span-2">
-                          <TextField
-                            label="Reviews"
-                            value={reviews}
-                            onChange={setReviews}
-                            placeholder="The visit felt calm | Booking was simple | The clinic felt trustworthy"
-                            rows={3}
-                          />
-                        </div>
-                      </div>
+                      {manualSections.find((section) => section.id === "images")
+                        ? manualContent
+                        : null}
                     </DetailGroup>
                   </div>
                 </Section>
@@ -1716,21 +1732,12 @@ export default function MockupPage() {
                     "Your main client message appears here before the full preview is generated."}
                 </p>
 
-                <div className="mt-5 flex flex-wrap gap-2">
-                  {(services || "Service one, Service two, Service three")
-                    .split(",")
-                    .map((service) => service.trim())
-                    .filter(Boolean)
-                    .slice(0, 3)
-                    .map((service) => (
-                      <span
-                        key={service}
-                        className="rounded-full border border-white/10 px-3 py-1 text-[10px] uppercase tracking-[0.12em] text-white/38"
-                      >
-                        {service}
-                      </span>
-                    ))}
-                </div>
+                {heroImage ? (
+                  <div
+                    className="mt-5 h-32 rounded-xl border border-white/10 bg-cover bg-center"
+                    style={{ backgroundImage: `url("${heroImage}")` }}
+                  />
+                ) : null}
               </div>
             </div>
 
