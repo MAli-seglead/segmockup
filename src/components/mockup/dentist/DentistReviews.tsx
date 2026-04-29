@@ -1,6 +1,7 @@
 import type { MockupData } from "@/types/mockup";
 
 export default function DentistReviews({ data }: { data: MockupData }) {
+  const testimonialsTitle = data.testimonialsTitle || "Reviews placed where doubt usually appears.";
   const reviews =
     data.reviews && data.reviews.length > 0
       ? data.reviews
@@ -23,7 +24,7 @@ export default function DentistReviews({ data }: { data: MockupData }) {
             </p>
 
             <h2 className="mt-4 max-w-3xl text-4xl font-semibold leading-tight text-slate-950 md:text-6xl">
-              Reviews placed where doubt usually appears.
+              {testimonialsTitle}
             </h2>
           </div>
 

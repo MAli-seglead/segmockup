@@ -10,6 +10,7 @@ export default function DentistAbout({ data }: { data: MockupData }) {
     data.aboutText ||
     `This direction makes ${data.businessName} feel premium, patient, and trustworthy. Spacious content, soft contrast, and direct treatment language help ${audience.toLowerCase()} feel oriented before they reach out.`;
   const teamImages = data.teamImages || [];
+  const galleryImages = data.galleryImages || [];
 
   return (
     <section className="bg-slate-50 px-6 py-24 md:py-32">
@@ -44,6 +45,29 @@ export default function DentistAbout({ data }: { data: MockupData }) {
               >
                 <p className="text-sm text-slate-500">Tone</p>
                 <p className="mt-2 font-semibold text-slate-950">{item}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            {["Before", "After"].map((label, index) => (
+              <div
+                key={label}
+                className="flex h-40 items-end rounded-2xl bg-cover bg-center p-4"
+                style={
+                  galleryImages[index]
+                    ? { backgroundImage: 'url("' + galleryImages[index] + '")' }
+                    : {
+                        background:
+                          'linear-gradient(145deg, #e2e8f0, ' +
+                          data.primaryColor +
+                          ', #ffffff)',
+                      }
+                }
+              >
+                <p className="rounded-full bg-white/80 px-3 py-2 text-xs font-semibold text-slate-700 backdrop-blur">
+                  {label} result
+                </p>
               </div>
             ))}
           </div>

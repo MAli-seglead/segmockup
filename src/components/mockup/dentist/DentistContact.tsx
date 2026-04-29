@@ -1,6 +1,7 @@
 import type { MockupData } from "@/types/mockup";
 
 export default function DentistContact({ data }: { data: MockupData }) {
+  const contactTitle = data.contactTitle || "Make the next step feel obvious.";
   const mainCta = data.mainCta || "Book Free Consultation";
   const phone = data.phone || "+90 555 000 00 00";
   const location = data.location || "Istanbul, Turkey";
@@ -18,7 +19,7 @@ export default function DentistContact({ data }: { data: MockupData }) {
           </p>
 
           <h2 className="mt-4 text-4xl font-semibold leading-tight md:text-6xl">
-            Make the next step feel obvious.
+            {contactTitle}
           </h2>
 
           <p className="mt-6 max-w-2xl text-lg leading-8 text-white/65">

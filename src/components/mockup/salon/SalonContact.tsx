@@ -1,6 +1,7 @@
 import type { MockupData } from "@/types/mockup";
 
 export default function SalonContact({ data }: { data: MockupData }) {
+  const contactTitle = data.contactTitle || "Turn the mood into a reservation.";
   const mainCta = data.mainCta || "Book Free Consultation";
   const phone = data.phone || "+90 555 000 00 00";
   const location = data.location || "Istanbul, Turkey";
@@ -18,7 +19,7 @@ export default function SalonContact({ data }: { data: MockupData }) {
           </p>
 
           <h2 className="mt-4 font-serif text-4xl leading-none md:text-6xl">
-            Turn the mood into a reservation.
+            {contactTitle}
           </h2>
         </div>
 

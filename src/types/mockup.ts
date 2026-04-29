@@ -1,13 +1,25 @@
-export type Industry = "dentist" | "salon";
-export type MockupStyle = "clean" | "luxury" | "bold";
+export type Industry = "dentist" | "salon" | "car";
+export type SectionVariant = "luxury" | "basic" | "bold";
+export type MockupStyle = "clean" | "basic" | SectionVariant;
 
 export type MockupData = {
   businessName: string;
   industry: Industry;
   primaryColor: string;
   secondaryColor: string;
+  accentColor?: string;
+  backgroundColor?: string;
+  textColor?: string;
   style: MockupStyle;
   services: string[];
+  serviceDescriptions?: string[];
+  servicesTitle?: string;
+  galleryTitle?: string;
+  testimonialsTitle?: string;
+  contactTitle?: string;
+  brandTone?: string;
+  colorSuggestions?: string;
+  layoutSuggestions?: string;
   logoText?: string;
   logoImage?: string;
   slogan?: string;

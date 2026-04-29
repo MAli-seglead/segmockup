@@ -31,6 +31,9 @@ type Starter = {
   audience: string;
   primaryColor: string;
   secondaryColor: string;
+  accentColor: string;
+  backgroundColor?: string;
+  textColor: string;
   style: MockupStyle;
   reviews: string;
 };
@@ -54,7 +57,18 @@ type GeneratedMockupContent = {
   reviews: string;
   primaryColor: string;
   secondaryColor: string;
+  accentColor: string;
+  backgroundColor?: string;
+  textColor: string;
   style: MockupStyle;
+  serviceDescriptions: string;
+  servicesTitle: string;
+  galleryTitle: string;
+  testimonialsTitle: string;
+  contactTitle: string;
+  brandTone: string;
+  colorSuggestions: string;
+  layoutSuggestions: string;
   logoImageSuggestion?: string;
   heroImageSuggestion?: string;
   galleryImageSuggestions?: string;
@@ -91,8 +105,10 @@ const starters: Starter[] = [
     specialOffer: "Free smile assessment this month",
     audience: "Families, professionals, and cosmetic treatment clients",
     primaryColor: "#2563eb",
-    secondaryColor: "#f8fafc",
-    style: "clean",
+    secondaryColor: "#ffffff",
+    accentColor: "#0f172a",
+    textColor: "#0f172a",
+    style: "basic",
     reviews:
       "The visit felt calm and professional | Booking was simple | The clinic felt trustworthy right away",
   },
@@ -115,9 +131,36 @@ const starters: Starter[] = [
     audience: "Style-conscious clients, bridal guests, and beauty regulars",
     primaryColor: "#a16207",
     secondaryColor: "#17130f",
+    accentColor: "#f7dfaa",
+    textColor: "#f7efe5",
     style: "luxury",
     reviews:
       "The atmosphere felt beautiful | My booking was effortless | The result looked exactly like the photos",
+  },
+  {
+    label: "Car starter",
+    industry: "car",
+    businessName: "Apex Motors",
+    logoText: "Apex",
+    slogan: "Selected cars. Serious presence.",
+    heroHeadline: "Premium cars for drivers who expect more",
+    heroDescription:
+      "Luxury rentals and curated sales for business trips, weekends, and clients who want a confident handover.",
+    aboutTitle: "A sharper way to choose your next drive",
+    aboutText:
+      "Apex Motors presents premium cars with clean inventory, high-quality visuals, transparent details, and a direct path to book, buy, or view.",
+    services: "Luxury SUV, Executive Sedan, Sports Coupe",
+    mainCta: "Book A Viewing",
+    secondaryCta: "View Cars",
+    specialOffer: "Priority handover slots this week",
+    audience: "Luxury buyers, business travelers, and weekend drivers",
+    primaryColor: "#c7a15a",
+    secondaryColor: "#090909",
+    accentColor: "#f4f1ea",
+    textColor: "#f4f1ea",
+    style: "luxury",
+    reviews:
+      "The car was ready and immaculate | The handover felt premium | Choosing a model was easy",
   },
 ];
 
@@ -306,9 +349,19 @@ export default function MockupPage() {
   const [businessName, setBusinessName] = useState("");
   const [industry, setIndustry] = useState<Industry>("dentist");
   const [primaryColor, setPrimaryColor] = useState("#2563eb");
-  const [secondaryColor, setSecondaryColor] = useState("#f8fafc");
-  const [style, setStyle] = useState<MockupStyle>("clean");
+  const [secondaryColor, setSecondaryColor] = useState("#ffffff");
+  const [accentColor, setAccentColor] = useState("#0f172a");
+  const [textColor, setTextColor] = useState("#0f172a");
+  const [style, setStyle] = useState<MockupStyle>("basic");
   const [services, setServices] = useState("");
+  const [serviceDescriptions, setServiceDescriptions] = useState("");
+  const [servicesTitle, setServicesTitle] = useState("");
+  const [galleryTitle, setGalleryTitle] = useState("");
+  const [testimonialsTitle, setTestimonialsTitle] = useState("");
+  const [contactTitle, setContactTitle] = useState("");
+  const [brandTone, setBrandTone] = useState("");
+  const [colorSuggestions, setColorSuggestions] = useState("");
+  const [layoutSuggestions, setLayoutSuggestions] = useState("");
   const [logoText, setLogoText] = useState("");
   const [logoImage, setLogoImage] = useState("");
   const [slogan, setSlogan] = useState("");
@@ -360,12 +413,58 @@ export default function MockupPage() {
     setAboutTitle(starter.aboutTitle);
     setAboutText(starter.aboutText);
     setServices(starter.services);
+    setServiceDescriptions("");
+    setServicesTitle(
+      starter.industry === "car"
+        ? "Featured inventory"
+        : starter.industry === "salon"
+          ? "Signature services"
+          : "Treatments made clear",
+    );
+    setGalleryTitle(
+      starter.industry === "car"
+        ? "Angles worth seeing in person"
+        : starter.industry === "salon"
+          ? "A visual reason to book"
+          : "Clinic moments",
+    );
+    setTestimonialsTitle(
+      starter.industry === "car"
+        ? "What drivers say after the handover"
+        : starter.industry === "salon"
+          ? "Client words, softly spoken"
+          : "Client words that build trust",
+    );
+    setContactTitle(
+      starter.industry === "car"
+        ? "Reserve the car before it moves"
+        : starter.industry === "salon"
+          ? "Turn the mood into a reservation"
+          : "Make the next step feel obvious",
+    );
+    setBrandTone(
+      starter.industry === "car"
+        ? "Strong, precise, premium, and automotive-led."
+        : starter.industry === "salon"
+          ? "Elegant, compact, visual, and quietly luxurious."
+          : "Calm, clear, reassuring, and premium.",
+    );
+    setColorSuggestions("Use the selected palette as the accent system for buttons, highlights, and image overlays.");
+    setLayoutSuggestions(
+      starter.industry === "car"
+        ? "Lead with a cinematic car hero, featured inventory, filters, trust proof, gallery, and booking CTA."
+        : starter.industry === "salon"
+          ? "Lead with a strong visual hero, compact services, gallery proof, then booking."
+          : "Lead with trust, clear treatments, doctor/team proof, reviews, then appointment CTA.",
+    );
     setMainCta(starter.mainCta);
     setSecondaryCta(starter.secondaryCta);
     setSpecialOffer(starter.specialOffer);
     setAudience(starter.audience);
     setPrimaryColor(starter.primaryColor);
     setSecondaryColor(starter.secondaryColor);
+    setAccentColor(starter.accentColor);
+    setTextColor(starter.textColor);
     setStyle(starter.style);
     setReviews(starter.reviews);
     setLocation("Istanbul, Turkey");
@@ -383,6 +482,14 @@ export default function MockupPage() {
     setAboutTitle(content.aboutTitle);
     setAboutText(content.aboutText);
     setServices(content.services);
+    setServiceDescriptions(content.serviceDescriptions);
+    setServicesTitle(content.servicesTitle);
+    setGalleryTitle(content.galleryTitle);
+    setTestimonialsTitle(content.testimonialsTitle);
+    setContactTitle(content.contactTitle);
+    setBrandTone(content.brandTone);
+    setColorSuggestions(content.colorSuggestions);
+    setLayoutSuggestions(content.layoutSuggestions);
     setMainCta(content.mainCta);
     setSecondaryCta(content.secondaryCta);
     setSpecialOffer(content.specialOffer);
@@ -391,7 +498,9 @@ export default function MockupPage() {
     setAudience(content.audience);
     setReviews(content.reviews);
     setPrimaryColor(content.primaryColor);
-    setSecondaryColor(content.secondaryColor);
+    setSecondaryColor(content.backgroundColor || content.secondaryColor);
+    setAccentColor(content.accentColor || content.primaryColor);
+    setTextColor(content.textColor || textColor);
     setStyle(content.style);
     setImageSuggestions({
       logoImage:
@@ -419,9 +528,11 @@ export default function MockupPage() {
     const subject =
       clientContext || heroDescription || heroHeadline || businessName || industry;
     const tone =
-      industry === "salon"
-        ? "luxury salon, champagne light, elegant boutique interior"
-        : "premium clinic, calm daylight, clean trustworthy atmosphere";
+      industry === "car"
+        ? "premium automotive showroom, dark metallic finish, cinematic lighting"
+        : industry === "salon"
+          ? "luxury salon, champagne light, elegant boutique interior"
+          : "premium clinic, calm daylight, clean trustworthy atmosphere";
 
     setImageSuggestions({
       logoImage: `Logo direction: refined ${businessName || "client"} monogram, minimal ${tone}.`,
@@ -506,8 +617,19 @@ export default function MockupPage() {
       industry,
       primary: primaryColor,
       secondary: secondaryColor,
+      accent: accentColor,
+      background: secondaryColor,
+      text: textColor,
       style,
       services,
+      serviceDescriptions,
+      servicesTitle,
+      galleryTitle,
+      testimonialsTitle,
+      contactTitle,
+      brandTone,
+      colorSuggestions,
+      layoutSuggestions,
       logoText,
       logoImage: urlOnly(logoImage),
       slogan,
@@ -567,7 +689,7 @@ export default function MockupPage() {
                         : "text-[#b6aa93] hover:bg-white/10 hover:text-[#fff8ec]"
                     }`}
                   >
-                    AI Assist
+                    AI Assisted
                   </button>
                   <button
                     type="button"
@@ -578,7 +700,7 @@ export default function MockupPage() {
                         : "text-[#b6aa93] hover:bg-white/10 hover:text-[#fff8ec]"
                     }`}
                   >
-                    Manual
+                    Manual Builder
                   </button>
                 </div>
               </div>
@@ -666,8 +788,9 @@ export default function MockupPage() {
           </aside>
 
           <div className="space-y-5">
-            <Section
-              title="AI Assist"
+            {mode === "ai" ? (
+              <Section
+                title="AI Assisted"
               description="Describe the client once. AI will fill the manual fields below, and you can edit every result before previewing."
             >
               <div className="grid gap-5 md:grid-cols-[1fr_auto] md:items-end">
@@ -695,10 +818,11 @@ export default function MockupPage() {
                   {aiError}
                 </p>
               ) : null}
-            </Section>
+              </Section>
+            ) : null}
 
             <Section
-              title="1. Start here"
+              title={mode === "ai" ? "1. Review generated content" : "1. Manual Builder"}
               description="The preview can already feel client-specific with these core details."
             >
               <div className="grid gap-5 md:grid-cols-2">
@@ -726,7 +850,7 @@ export default function MockupPage() {
                     ))}
                   </select>
                   <p className="mt-2 text-xs text-[#9f927a]">
-                    Switches between the dentist and salon website design.
+                    Switches between the dentist, salon, and automotive website design.
                   </p>
                 </div>
 
@@ -765,7 +889,75 @@ export default function MockupPage() {
             </Section>
 
             <Section
-              title="2. Brand and trust"
+              title="2. AI strategy and section plan"
+              description="Editable AI suggestions for tone, colors, layout, section titles, and service descriptions."
+            >
+              <div className="grid gap-5 md:grid-cols-2">
+                <TextField
+                  label="Services section title"
+                  value={servicesTitle}
+                  onChange={setServicesTitle}
+                  placeholder="Signature services"
+                />
+
+                <TextField
+                  label="Service descriptions"
+                  value={serviceDescriptions}
+                  onChange={setServiceDescriptions}
+                  placeholder="A concise benefit for service one; A concise benefit for service two"
+                  helper="Separate each description with a semicolon."
+                />
+
+                <TextField
+                  label="Gallery title"
+                  value={galleryTitle}
+                  onChange={setGalleryTitle}
+                  placeholder="A visual reason to book"
+                />
+
+                <TextField
+                  label="Testimonials title"
+                  value={testimonialsTitle}
+                  onChange={setTestimonialsTitle}
+                  placeholder="Client words that build trust"
+                />
+
+                <TextField
+                  label="Contact title"
+                  value={contactTitle}
+                  onChange={setContactTitle}
+                  placeholder="Make the next step feel obvious"
+                />
+
+                <TextField
+                  label="Brand tone"
+                  value={brandTone}
+                  onChange={setBrandTone}
+                  placeholder="Calm, premium, reassuring, and direct."
+                />
+              </div>
+
+              <div className="mt-5 grid gap-5 md:grid-cols-2">
+                <TextField
+                  label="Color suggestions"
+                  value={colorSuggestions}
+                  onChange={setColorSuggestions}
+                  placeholder="Use champagne accents over a dark luxury base."
+                  rows={3}
+                />
+
+                <TextField
+                  label="Layout suggestions"
+                  value={layoutSuggestions}
+                  onChange={setLayoutSuggestions}
+                  placeholder="Lead with a strong hero, then services, trust proof, gallery, and CTA."
+                  rows={3}
+                />
+              </div>
+            </Section>
+
+            <Section
+              title="3. Brand and trust"
               description="These details make the mockup feel less generic without needing real assets."
             >
               <div className="grid gap-5 md:grid-cols-2">
@@ -834,7 +1026,7 @@ export default function MockupPage() {
               title="4. Contact details"
               description="These appear near the booking area so the preview feels like a real local business."
             >
-              <div className="grid gap-5 md:grid-cols-3">
+              <div className="grid gap-5 md:grid-cols-5">
                 <TextField
                   label="Phone / WhatsApp"
                   value={phone}
@@ -1009,7 +1201,7 @@ export default function MockupPage() {
               title="5. Visual style"
               description="Small styling controls for the generated page."
             >
-              <div className="grid gap-5 md:grid-cols-3">
+              <div className="grid gap-5 md:grid-cols-5">
                 <div>
                   <label className="text-sm font-medium text-[#d9c9ad]">
                     Style
@@ -1019,7 +1211,7 @@ export default function MockupPage() {
                     onChange={(e) => setStyle(e.target.value as MockupStyle)}
                     className="mt-2 w-full rounded-2xl border border-white/10 bg-[#14100c] px-4 py-3 text-[#fff8ec] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] outline-none transition hover:border-[#d7b46a]/40 focus:border-[#d7b46a]/70 focus:ring-4 focus:ring-[#d7b46a]/10"
                   >
-                    <option value="clean">Clean</option>
+                    <option value="basic">Basic</option>
                     <option value="luxury">Luxury</option>
                     <option value="bold">Bold</option>
                   </select>
@@ -1045,6 +1237,30 @@ export default function MockupPage() {
                     type="color"
                     value={secondaryColor}
                     onChange={(e) => setSecondaryColor(e.target.value)}
+                    className="mt-2 h-12 w-full rounded-2xl border border-white/10 bg-white/[0.055] p-1"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-[#d9c9ad]">
+                    Accent color
+                  </label>
+                  <input
+                    type="color"
+                    value={accentColor}
+                    onChange={(e) => setAccentColor(e.target.value)}
+                    className="mt-2 h-12 w-full rounded-2xl border border-white/10 bg-white/[0.055] p-1"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-[#d9c9ad]">
+                    Text color
+                  </label>
+                  <input
+                    type="color"
+                    value={textColor}
+                    onChange={(e) => setTextColor(e.target.value)}
                     className="mt-2 h-12 w-full rounded-2xl border border-white/10 bg-white/[0.055] p-1"
                   />
                 </div>

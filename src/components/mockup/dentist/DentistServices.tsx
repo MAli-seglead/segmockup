@@ -2,6 +2,8 @@ import type { MockupData } from "@/types/mockup";
 
 export default function DentistServices({ data }: { data: MockupData }) {
   const serviceImages = data.serviceImages || [];
+  const serviceDescriptions = data.serviceDescriptions || [];
+  const servicesTitle = data.servicesTitle || "Treatments made clear";
 
   return (
     <section className="bg-white px-6 py-24 md:py-32">
@@ -15,7 +17,7 @@ export default function DentistServices({ data }: { data: MockupData }) {
           </p>
 
           <h2 className="mt-4 text-4xl font-semibold leading-tight text-slate-950 md:text-6xl">
-            Clear services, calm decisions.
+            {servicesTitle}
           </h2>
         </div>
 
@@ -47,8 +49,8 @@ export default function DentistServices({ data }: { data: MockupData }) {
               </h3>
 
               <p className="mt-4 leading-7 text-slate-600">
-                A simple service card with enough detail to reassure patients
-                and guide them toward the appointment form.
+                {serviceDescriptions[index] ||
+                  "A simple service card with enough detail to reassure patients and guide them toward the appointment form."}
               </p>
             </article>
           ))}

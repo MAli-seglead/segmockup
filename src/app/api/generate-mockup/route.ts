@@ -25,7 +25,18 @@ type GeneratedMockupContent = {
   reviews: string;
   primaryColor: string;
   secondaryColor: string;
+  accentColor: string;
+  backgroundColor: string;
+  textColor: string;
   style: MockupStyle;
+  serviceDescriptions: string;
+  servicesTitle: string;
+  galleryTitle: string;
+  testimonialsTitle: string;
+  contactTitle: string;
+  brandTone: string;
+  colorSuggestions: string;
+  layoutSuggestions: string;
   logoImageSuggestion?: string;
   heroImageSuggestion?: string;
   galleryImageSuggestions?: string;
@@ -64,6 +75,14 @@ const responseSchema = {
     aboutTitle: { type: "string" },
     aboutText: { type: "string" },
     services: { type: "string" },
+    serviceDescriptions: { type: "string" },
+    servicesTitle: { type: "string" },
+    galleryTitle: { type: "string" },
+    testimonialsTitle: { type: "string" },
+    contactTitle: { type: "string" },
+    brandTone: { type: "string" },
+    colorSuggestions: { type: "string" },
+    layoutSuggestions: { type: "string" },
     mainCta: { type: "string" },
     secondaryCta: { type: "string" },
     specialOffer: { type: "string" },
@@ -73,6 +92,9 @@ const responseSchema = {
     reviews: { type: "string" },
     primaryColor: { type: "string" },
     secondaryColor: { type: "string" },
+    accentColor: { type: "string" },
+    backgroundColor: { type: "string" },
+    textColor: { type: "string" },
     logoImageSuggestion: { type: "string" },
     heroImageSuggestion: { type: "string" },
     galleryImageSuggestions: { type: "string" },
@@ -81,7 +103,7 @@ const responseSchema = {
     backgroundImageSuggestions: { type: "string" },
     style: {
       type: "string",
-      enum: ["clean", "luxury", "bold"],
+      enum: ["basic", "luxury", "bold"],
     },
   },
   required: [
@@ -94,6 +116,14 @@ const responseSchema = {
     "aboutTitle",
     "aboutText",
     "services",
+    "serviceDescriptions",
+    "servicesTitle",
+    "galleryTitle",
+    "testimonialsTitle",
+    "contactTitle",
+    "brandTone",
+    "colorSuggestions",
+    "layoutSuggestions",
     "mainCta",
     "secondaryCta",
     "specialOffer",
@@ -103,6 +133,9 @@ const responseSchema = {
     "reviews",
     "primaryColor",
     "secondaryColor",
+    "accentColor",
+    "backgroundColor",
+    "textColor",
     "logoImageSuggestion",
     "heroImageSuggestion",
     "galleryImageSuggestions",
@@ -136,6 +169,14 @@ function isGeneratedMockupContent(value: unknown): value is GeneratedMockupConte
     "aboutTitle",
     "aboutText",
     "services",
+    "serviceDescriptions",
+    "servicesTitle",
+    "galleryTitle",
+    "testimonialsTitle",
+    "contactTitle",
+    "brandTone",
+    "colorSuggestions",
+    "layoutSuggestions",
     "mainCta",
     "secondaryCta",
     "specialOffer",
@@ -145,6 +186,9 @@ function isGeneratedMockupContent(value: unknown): value is GeneratedMockupConte
     "reviews",
     "primaryColor",
     "secondaryColor",
+    "accentColor",
+    "backgroundColor",
+    "textColor",
     "logoImageSuggestion",
     "heroImageSuggestion",
     "galleryImageSuggestions",
@@ -155,7 +199,7 @@ function isGeneratedMockupContent(value: unknown): value is GeneratedMockupConte
 
   return (
     requiredStrings.every((key) => typeof content[key] === "string") &&
-    ["clean", "luxury", "bold"].includes(content.style as string)
+    ["basic", "luxury", "bold"].includes(content.style as string)
   );
 }
 
@@ -195,7 +239,10 @@ export async function POST(request: Request) {
 
   const body = (await request.json()) as GenerateRequest;
   const clientContext = body.clientContext?.trim();
-  const industry = body.industry === "salon" ? "salon" : "dentist";
+  const industry: Industry =
+    body.industry === "salon" || body.industry === "car"
+      ? body.industry
+      : "dentist";
 
   if (!clientContext) {
     return NextResponse.json(
@@ -211,15 +258,23 @@ export async function POST(request: Request) {
     "Do not use generic AI-sounding phrases like elevate, transform, unlock, seamless, cutting-edge, tailored solutions, or experience the difference.",
     "Use realistic local-business copy. Keep every field concise and specific.",
     "services must be a comma-separated string with 3 to 5 services.",
+    "serviceDescriptions must be a semicolon-separated string with one concise benefit-led description per service.",
+    "Generate realistic section titles for servicesTitle, galleryTitle, testimonialsTitle, and contactTitle.",
+    "brandTone must describe the voice in one concise sentence.",
+    "colorSuggestions must explain the chosen palette in one concise sentence.",
+    "layoutSuggestions must suggest the page composition in one concise sentence.",
     "reviews must be one string with 3 short reviews separated by the | symbol.",
-    "primaryColor and secondaryColor must be six-digit hex colors.",
+    "primaryColor, secondaryColor, accentColor, backgroundColor, and textColor must be six-digit hex colors.",
+    "style must be one of: basic, luxury, bold.",
     "For image suggestion fields, describe the ideal image direction. Do not invent file names or fake URLs.",
     "phone may be a plausible placeholder if not provided.",
     `Industry: ${industry}.`,
     `Client context: ${clientContext}`,
-    industry === "salon"
-      ? "Salon direction: luxury, elegant, compact, boutique, visual, booking focused."
-      : "Dentist direction: simple, calm, premium, trustworthy, appointment focused.",
+    industry === "car"
+      ? "Car direction: premium automotive brand, dark metallic, high-quality image focus, featured inventory, category filters, and booking or buying CTA."
+      : industry === "salon"
+        ? "Salon direction: luxury, elegant, compact, boutique, visual, booking focused."
+        : "Dentist direction: simple, calm, premium, trustworthy, appointment focused.",
   ].join("\n");
 
   const response = await fetch(

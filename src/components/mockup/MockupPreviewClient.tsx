@@ -13,6 +13,19 @@ type StoredImages = {
   backgroundImages?: string[];
 };
 
+function mergeImageList(
+  uploadedImages: string[] | undefined,
+  fallbackImages: string[] | undefined,
+) {
+  const cleanUploads = uploadedImages?.filter(Boolean) || [];
+
+  if (cleanUploads.length === 0) {
+    return fallbackImages;
+  }
+
+  return [...cleanUploads, ...(fallbackImages || []).slice(cleanUploads.length)];
+}
+
 export default function MockupPreviewClient({
   data,
   imageSession,
@@ -39,22 +52,13 @@ export default function MockupPreviewClient({
         ...data,
         logoImage: images.logoImage || data.logoImage,
         heroImage: images.heroImage || data.heroImage,
-        galleryImages:
-          images.galleryImages && images.galleryImages.length > 0
-            ? images.galleryImages
-            : data.galleryImages,
-        serviceImages:
-          images.serviceImages && images.serviceImages.length > 0
-            ? images.serviceImages
-            : data.serviceImages,
-        teamImages:
-          images.teamImages && images.teamImages.length > 0
-            ? images.teamImages
-            : data.teamImages,
-        backgroundImages:
-          images.backgroundImages && images.backgroundImages.length > 0
-            ? images.backgroundImages
-            : data.backgroundImages,
+        galleryImages: mergeImageList(images.galleryImages, data.galleryImages),
+        serviceImages: mergeImageList(images.serviceImages, data.serviceImages),
+        teamImages: mergeImageList(images.teamImages, data.teamImages),
+        backgroundImages: mergeImageList(
+          images.backgroundImages,
+          data.backgroundImages,
+        ),
       };
     } catch {
       return data;

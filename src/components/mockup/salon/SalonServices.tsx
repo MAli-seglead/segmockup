@@ -2,6 +2,8 @@ import type { MockupData } from "@/types/mockup";
 
 export default function SalonServices({ data }: { data: MockupData }) {
   const serviceImages = data.serviceImages || [];
+  const serviceDescriptions = data.serviceDescriptions || [];
+  const servicesTitle = data.servicesTitle || "Signature services";
 
   return (
     <section className="bg-[#f7efe5] px-5 py-16 text-[#17130f] md:px-6 md:py-20">
@@ -15,7 +17,7 @@ export default function SalonServices({ data }: { data: MockupData }) {
               Treatment Menu
             </p>
             <h2 className="mt-4 font-serif text-4xl leading-none md:text-6xl">
-              Services with a boutique rhythm.
+              {servicesTitle}
             </h2>
           </div>
 
@@ -52,8 +54,8 @@ export default function SalonServices({ data }: { data: MockupData }) {
               <div>
                 <h3 className="font-serif text-3xl">{service}</h3>
                 <p className="mt-2 max-w-xl text-sm leading-6 text-[#17130f]/60">
-                  A polished treatment description that keeps the page compact
-                  and booking focused.
+                  {serviceDescriptions[index] ||
+                    "A polished treatment description that keeps the page compact and booking focused."}
                 </p>
               </div>
               <button

@@ -1,6 +1,7 @@
 import type { MockupData } from "@/types/mockup";
 
 export default function SalonGallery({ data }: { data: MockupData }) {
+  const galleryTitle = data.galleryTitle || "The visual reason to book.";
   const galleryImages = data.galleryImages || [];
   const fallbackTiles = [
     `linear-gradient(160deg, ${data.primaryColor}, #f7efe5)`,
@@ -30,7 +31,7 @@ export default function SalonGallery({ data }: { data: MockupData }) {
             </p>
 
             <h2 className="mt-4 max-w-3xl font-serif text-4xl leading-none md:text-6xl">
-              The visual reason to book.
+              {galleryTitle}
             </h2>
           </div>
 
