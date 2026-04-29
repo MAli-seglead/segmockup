@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, type DragEvent } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useMemo, useState, type DragEvent, type ReactNode } from "react";
 import { industries } from "@/data/templates";
 import type { Industry, MockupStyle } from "@/types/mockup";
 
@@ -86,6 +87,16 @@ type ImageSuggestions = {
   backgroundImages: string;
 };
 
+type ManualSectionId =
+  | "essentials"
+  | "strategy"
+  | "brand"
+  | "about"
+  | "contact"
+  | "images";
+
+const imageDelimiter = "||SEGIMG||";
+
 const starters: Starter[] = [
   {
     label: "Dentist starter",
@@ -164,6 +175,75 @@ const starters: Starter[] = [
   },
 ];
 
+const promptStarters = [
+  {
+    label: "Dentist",
+    value:
+      "Premium dentist clinic in Istanbul for families and professionals. Needs a calm, trustworthy website focused on appointments, treatments, and patient confidence.",
+  },
+  {
+    label: "Salon",
+    value:
+      "Boutique beauty salon for style-conscious clients. Needs an elegant visual website focused on services, atmosphere, gallery proof, and easy reservations.",
+  },
+  {
+    label: "Car Rental",
+    value:
+      "Premium car rental and sales business with luxury SUVs, executive sedans, and sports cars. Needs a sharp website focused on enquiries and vehicle presentation.",
+  },
+];
+
+const manualSections: {
+  id: ManualSectionId;
+  label: string;
+  description: string;
+}[] = [
+  {
+    id: "essentials",
+    label: "Essentials",
+    description: "The fields that shape the first impression.",
+  },
+  {
+    id: "strategy",
+    label: "Strategy",
+    description: "Section titles, tone, layout, and service logic.",
+  },
+  {
+    id: "brand",
+    label: "Brand",
+    description: "Logo text, slogan, offer, audience, and reviews.",
+  },
+  {
+    id: "about",
+    label: "About",
+    description: "Credibility, story, and secondary action.",
+  },
+  {
+    id: "contact",
+    label: "Contact",
+    description: "Location, phone, and working hours.",
+  },
+  {
+    id: "images",
+    label: "Images",
+    description: "Upload visuals or use generated image direction.",
+  },
+];
+
+const styleOptions: { label: string; value: MockupStyle }[] = [
+  { label: "Luxury", value: "luxury" },
+  { label: "Basic", value: "basic" },
+  { label: "Bold", value: "bold" },
+];
+
+function cn(...classes: Array<string | false | undefined>) {
+  return classes.filter(Boolean).join(" ");
+}
+
+function safeColor(value: string, fallback = "#55f5c6") {
+  return /^#[0-9a-f]{6}$/i.test(value) ? value : fallback;
+}
+
 function TextField({
   label,
   value,
@@ -173,15 +253,18 @@ function TextField({
   rows,
 }: FieldProps) {
   const className =
-    "mt-2 w-full rounded-2xl border border-white/10 bg-white/[0.055] px-4 py-3 text-[#fff8ec] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] outline-none transition placeholder:text-[#8d8069] hover:border-[#d7b46a]/40 focus:border-[#d7b46a]/70 focus:bg-white/[0.075] focus:ring-4 focus:ring-[#d7b46a]/10";
+    "mt-2 w-full rounded-xl border border-white/10 bg-white/[0.045] px-4 py-3 text-sm text-[#f7f6ed] outline-none transition placeholder:text-white/25 hover:border-[#55f5c6]/35 focus:border-[#55f5c6]/70 focus:bg-white/[0.065] focus:ring-4 focus:ring-[#55f5c6]/10";
 
   return (
     <div>
-      <label className="text-sm font-medium text-[#d9c9ad]">{label}</label>
+      <label className="text-[11px] font-black uppercase tracking-[0.16em] text-white/50">
+        {label}
+      </label>
+
       {rows ? (
         <textarea
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
           rows={rows}
           className={`${className} resize-none`}
@@ -189,39 +272,169 @@ function TextField({
       ) : (
         <input
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
           className={className}
         />
       )}
-      {helper ? <p className="mt-2 text-xs text-[#9f927a]">{helper}</p> : null}
+
+      {helper ? (
+        <p className="mt-2 text-[11px] leading-5 text-white/32">{helper}</p>
+      ) : null}
+    </div>
+  );
+}
+
+function SelectField({
+  label,
+  value,
+  onChange,
+  options,
+  helper,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: { label: string; value: string }[];
+  helper?: string;
+}) {
+  return (
+    <div>
+      <label className="text-[11px] font-black uppercase tracking-[0.16em] text-white/50">
+        {label}
+      </label>
+
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="mt-2 w-full rounded-xl border border-white/10 bg-white/[0.045] px-4 py-3 text-sm text-[#f7f6ed] outline-none transition hover:border-[#55f5c6]/35 focus:border-[#55f5c6]/70 focus:bg-white/[0.065] focus:ring-4 focus:ring-[#55f5c6]/10"
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value} className="bg-black">
+            {option.label}
+          </option>
+        ))}
+      </select>
+
+      {helper ? (
+        <p className="mt-2 text-[11px] leading-5 text-white/32">{helper}</p>
+      ) : null}
+    </div>
+  );
+}
+
+function ColorField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div>
+      <label className="text-[11px] font-black uppercase tracking-[0.16em] text-white/50">
+        {label}
+      </label>
+
+      <div className="mt-2 flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.045] p-2 transition hover:border-[#55f5c6]/35">
+        <input
+          type="color"
+          value={safeColor(value)}
+          onChange={(event) => onChange(event.target.value)}
+          className="h-9 w-11 cursor-pointer rounded-lg border border-white/10 bg-transparent"
+        />
+
+        <input
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="min-w-0 flex-1 bg-transparent text-sm text-[#f7f6ed] outline-none placeholder:text-white/25"
+          placeholder="#55f5c6"
+        />
+      </div>
     </div>
   );
 }
 
 function Section({
+  eyebrow,
   title,
   description,
   children,
+  action,
+}: {
+  eyebrow?: string;
+  title: string;
+  description?: string;
+  children: ReactNode;
+  action?: ReactNode;
+}) {
+  return (
+    <section className="overflow-hidden rounded-2xl border border-white/[0.075] bg-[#07100d]/70 shadow-2xl shadow-black/25 backdrop-blur-xl transition hover:border-[#55f5c6]/20">
+      <div className="flex flex-col justify-between gap-4 border-b border-white/[0.07] px-5 py-5 md:flex-row md:items-start md:px-6">
+        <div>
+          {eyebrow ? (
+            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#55f5c6]">
+              {eyebrow}
+            </p>
+          ) : null}
+
+          <h2 className="mt-1 text-lg font-semibold tracking-[-0.03em] text-white">
+            {title}
+          </h2>
+
+          {description ? (
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-white/42">
+              {description}
+            </p>
+          ) : null}
+        </div>
+
+        {action}
+      </div>
+
+      <div className="p-5 md:p-6">{children}</div>
+    </section>
+  );
+}
+
+function DetailGroup({
+  title,
+  description,
+  children,
+  defaultOpen,
 }: {
   title: string;
   description: string;
-  children: React.ReactNode;
+  children: ReactNode;
+  defaultOpen?: boolean;
 }) {
   return (
-    <section className="rounded-[1.75rem] border border-white/10 bg-[#17140f]/75 p-5 shadow-2xl shadow-black/20 backdrop-blur-xl transition hover:border-[#d7b46a]/25 md:p-6">
-      <div className="mb-5 border-b border-white/10 pb-4">
-        <h2 className="text-base font-semibold text-[#fff8ec]">{title}</h2>
-        <p className="mt-1 text-sm leading-6 text-[#a99b83]">{description}</p>
-      </div>
-      {children}
-    </section>
+    <details
+      open={defaultOpen}
+      className="group rounded-2xl border border-white/[0.07] bg-black/20"
+    >
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4">
+        <div>
+          <p className="text-sm font-semibold text-white">{title}</p>
+          <p className="mt-1 text-xs leading-5 text-white/38">{description}</p>
+        </div>
+
+        <span className="text-lg text-[#55f5c6] transition group-open:rotate-45">
+          +
+        </span>
+      </summary>
+
+      <div className="border-t border-white/[0.07] p-5">{children}</div>
+    </details>
   );
 }
 
 function readImageFile(file: File) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
+
     reader.onload = () => resolve(String(reader.result));
     reader.onerror = () => reject(reader.error);
     reader.readAsDataURL(file);
@@ -229,6 +442,21 @@ function readImageFile(file: File) {
 }
 
 function splitImageList(value: string) {
+  if (!value.trim()) {
+    return [];
+  }
+
+  if (value.includes(imageDelimiter)) {
+    return value
+      .split(imageDelimiter)
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  if (value.startsWith("data:")) {
+    return [value];
+  }
+
   return value
     .split(",")
     .map((item) => item.trim())
@@ -236,7 +464,7 @@ function splitImageList(value: string) {
 }
 
 function joinImageList(values: string[]) {
-  return values.join(",");
+  return values.join(imageDelimiter);
 }
 
 function urlOnly(value: string) {
@@ -244,9 +472,9 @@ function urlOnly(value: string) {
 }
 
 function urlListOnly(value: string) {
-  return joinImageList(
-    splitImageList(value).filter((item) => !item.startsWith("data:")),
-  );
+  return splitImageList(value)
+    .filter((item) => !item.startsWith("data:"))
+    .join(",");
 }
 
 function ImageDropzone({
@@ -275,6 +503,7 @@ function ImageDropzone({
     }
 
     const dataUrls = await Promise.all(imageFiles.map(readImageFile));
+
     onChange(multiple ? joinImageList([...images, ...dataUrls]) : dataUrls[0]);
   }
 
@@ -286,12 +515,15 @@ function ImageDropzone({
   return (
     <div>
       <div className="mb-2 flex items-center justify-between gap-3">
-        <label className="text-sm font-medium text-[#d9c9ad]">{label}</label>
+        <label className="text-[11px] font-black uppercase tracking-[0.16em] text-white/50">
+          {label}
+        </label>
+
         {hasImages ? (
           <button
             type="button"
             onClick={() => onChange("")}
-            className="text-xs font-semibold text-[#d7b46a] transition hover:text-[#fff0bd]"
+            className="text-[11px] font-black uppercase tracking-[0.16em] text-[#55f5c6] transition hover:text-white"
           >
             Clear
           </button>
@@ -301,7 +533,7 @@ function ImageDropzone({
       <label
         onDragOver={(event) => event.preventDefault()}
         onDrop={handleDrop}
-        className="group block cursor-pointer rounded-[1.5rem] border border-dashed border-[#d7b46a]/35 bg-white/[0.045] p-4 transition hover:-translate-y-0.5 hover:border-[#d7b46a]/70 hover:bg-[#d7b46a]/10"
+        className="group block cursor-pointer rounded-2xl border border-dashed border-[#55f5c6]/25 bg-white/[0.035] p-4 transition hover:-translate-y-0.5 hover:border-[#55f5c6]/65 hover:bg-[#55f5c6]/[0.06]"
       >
         <input
           type="file"
@@ -320,21 +552,23 @@ function ImageDropzone({
             {images.slice(0, multiple ? 4 : 1).map((image, index) => (
               <div
                 key={`${label}-${index}-${image.slice(0, 24)}`}
-                className="h-36 rounded-2xl bg-cover bg-center shadow-xl shadow-black/20"
+                className="h-36 rounded-xl border border-white/10 bg-cover bg-center shadow-xl shadow-black/20"
                 style={{ backgroundImage: `url("${image}")` }}
               />
             ))}
           </div>
         ) : (
-          <div className="flex min-h-36 flex-col items-center justify-center rounded-2xl border border-white/10 bg-black/20 px-5 py-8 text-center">
-            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#d7b46a]/15 text-lg text-[#d7b46a]">
+          <div className="flex min-h-36 flex-col items-center justify-center rounded-xl border border-white/10 bg-black/20 px-5 py-8 text-center">
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#55f5c6]/12 text-lg font-black text-[#55f5c6]">
               +
             </div>
-            <p className="mt-4 text-sm font-semibold text-[#fff8ec]">
+
+            <p className="mt-4 text-sm font-semibold text-[#f7f6ed]">
               Drop image or click to upload
             </p>
-            <p className="mt-2 text-xs leading-5 text-[#9f927a]">
-              {suggestion || "Elegant placeholder used when empty."}
+
+            <p className="mt-2 text-xs leading-5 text-white/38">
+              {suggestion || "Fallback visuals are used when empty."}
             </p>
           </div>
         )}
@@ -353,6 +587,7 @@ export default function MockupPage() {
   const [accentColor, setAccentColor] = useState("#0f172a");
   const [textColor, setTextColor] = useState("#0f172a");
   const [style, setStyle] = useState<MockupStyle>("basic");
+
   const [services, setServices] = useState("");
   const [serviceDescriptions, setServiceDescriptions] = useState("");
   const [servicesTitle, setServicesTitle] = useState("");
@@ -362,6 +597,7 @@ export default function MockupPage() {
   const [brandTone, setBrandTone] = useState("");
   const [colorSuggestions, setColorSuggestions] = useState("");
   const [layoutSuggestions, setLayoutSuggestions] = useState("");
+
   const [logoText, setLogoText] = useState("");
   const [logoImage, setLogoImage] = useState("");
   const [slogan, setSlogan] = useState("");
@@ -382,26 +618,43 @@ export default function MockupPage() {
   const [teamImages, setTeamImages] = useState("");
   const [backgroundImages, setBackgroundImages] = useState("");
   const [reviews, setReviews] = useState("");
+
   const [clientContext, setClientContext] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
   const [mode, setMode] = useState<"ai" | "manual">("ai");
+  const [activeManualSection, setActiveManualSection] =
+    useState<ManualSectionId>("essentials");
+
   const [imageSuggestions, setImageSuggestions] = useState<ImageSuggestions>({
     logoImage: "Simple mark or monogram on a quiet luxury background.",
     heroImage: "Premium first impression image that matches the client tone.",
     galleryImages: "A curated set of atmospheric detail and result images.",
     teamImages: "Warm, polished portraits of the people behind the business.",
-    serviceImages: "Close-up treatment or service images with premium lighting.",
+    serviceImages:
+      "Close-up treatment or service images with premium lighting.",
     backgroundImages: "Subtle brand texture or interior image for depth.",
   });
 
-  const helpfulFields = [
-    businessName.trim(),
-    heroHeadline.trim(),
-    heroDescription.trim(),
-    services.trim(),
-    mainCta.trim(),
-  ].filter(Boolean).length;
+  const readinessItems = useMemo(
+    () => [
+      { label: "Business", done: Boolean(businessName.trim()) },
+      { label: "Hero", done: Boolean(heroHeadline.trim()) },
+      { label: "Message", done: Boolean(heroDescription.trim()) },
+      { label: "Services", done: Boolean(services.trim()) },
+      { label: "CTA", done: Boolean(mainCta.trim()) },
+    ],
+    [businessName, heroHeadline, heroDescription, services, mainCta],
+  );
+
+  const helpfulFields = readinessItems.filter((item) => item.done).length;
+  const readinessPercent = Math.round(
+    (helpfulFields / readinessItems.length) * 100,
+  );
+  const promptStrength = Math.min(
+    100,
+    Math.round((clientContext.trim().length / 240) * 100),
+  );
 
   function applyStarter(starter: Starter) {
     setBusinessName(starter.businessName);
@@ -414,6 +667,7 @@ export default function MockupPage() {
     setAboutText(starter.aboutText);
     setServices(starter.services);
     setServiceDescriptions("");
+
     setServicesTitle(
       starter.industry === "car"
         ? "Featured inventory"
@@ -421,6 +675,7 @@ export default function MockupPage() {
           ? "Signature services"
           : "Treatments made clear",
     );
+
     setGalleryTitle(
       starter.industry === "car"
         ? "Angles worth seeing in person"
@@ -428,6 +683,7 @@ export default function MockupPage() {
           ? "A visual reason to book"
           : "Clinic moments",
     );
+
     setTestimonialsTitle(
       starter.industry === "car"
         ? "What drivers say after the handover"
@@ -435,6 +691,7 @@ export default function MockupPage() {
           ? "Client words, softly spoken"
           : "Client words that build trust",
     );
+
     setContactTitle(
       starter.industry === "car"
         ? "Reserve the car before it moves"
@@ -442,6 +699,7 @@ export default function MockupPage() {
           ? "Turn the mood into a reservation"
           : "Make the next step feel obvious",
     );
+
     setBrandTone(
       starter.industry === "car"
         ? "Strong, precise, premium, and automotive-led."
@@ -449,7 +707,11 @@ export default function MockupPage() {
           ? "Elegant, compact, visual, and quietly luxurious."
           : "Calm, clear, reassuring, and premium.",
     );
-    setColorSuggestions("Use the selected palette as the accent system for buttons, highlights, and image overlays.");
+
+    setColorSuggestions(
+      "Use the selected palette as the accent system for buttons, highlights, and image overlays.",
+    );
+
     setLayoutSuggestions(
       starter.industry === "car"
         ? "Lead with a cinematic car hero, featured inventory, filters, trust proof, gallery, and booking CTA."
@@ -457,6 +719,7 @@ export default function MockupPage() {
           ? "Lead with a strong visual hero, compact services, gallery proof, then booking."
           : "Lead with trust, clear treatments, doctor/team proof, reviews, then appointment CTA.",
     );
+
     setMainCta(starter.mainCta);
     setSecondaryCta(starter.secondaryCta);
     setSpecialOffer(starter.specialOffer);
@@ -502,6 +765,7 @@ export default function MockupPage() {
     setAccentColor(content.accentColor || content.primaryColor);
     setTextColor(content.textColor || textColor);
     setStyle(content.style);
+
     setImageSuggestions({
       logoImage:
         content.logoImageSuggestion ||
@@ -527,6 +791,7 @@ export default function MockupPage() {
   function suggestImageDirection() {
     const subject =
       clientContext || heroDescription || heroHeadline || businessName || industry;
+
     const tone =
       industry === "car"
         ? "premium automotive showroom, dark metallic finish, cinematic lighting"
@@ -656,109 +921,392 @@ export default function MockupPage() {
     router.push(`/preview?${params.toString()}`);
   }
 
-  return (
-    <main className="relative min-h-screen overflow-hidden bg-[#070706] px-5 py-10 text-[#fff8ec] md:px-8 md:py-14">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_10%,rgba(215,180,106,0.18),transparent_28%),radial-gradient(circle_at_78%_4%,rgba(255,248,236,0.1),transparent_22%),linear-gradient(180deg,#0d0b09_0%,#050505_70%)]" />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#d7b46a]/70 to-transparent" />
+  const manualContent =
+    activeManualSection === "essentials" ? (
+      <div className="grid gap-5 md:grid-cols-2">
+        <TextField
+          label="Business name"
+          value={businessName}
+          onChange={setBusinessName}
+          placeholder="CCS Dental"
+          helper="Used in the logo, hero, reviews, and contact area."
+        />
 
-      <div className="relative mx-auto max-w-7xl">
-        <div className="grid gap-8 lg:grid-cols-[360px_1fr] lg:items-start">
-          <aside className="lg:sticky lg:top-8">
-            <div className="rounded-[2rem] border border-white/12 bg-white/[0.07] p-6 shadow-2xl shadow-black/40 backdrop-blur-2xl">
-              <p className="text-xs font-bold uppercase tracking-[0.28em] text-[#d7b46a]">
+        <SelectField
+          label="Industry"
+          value={industry}
+          onChange={(value) => setIndustry(value as Industry)}
+          options={industries}
+          helper="Changes the structure and default visual logic."
+        />
+
+        <TextField
+          label="Hero headline"
+          value={heroHeadline}
+          onChange={setHeroHeadline}
+          placeholder="Premium dental care for modern families"
+          helper="The main headline visitors see first."
+        />
+
+        <TextField
+          label="Hero description"
+          value={heroDescription}
+          onChange={setHeroDescription}
+          placeholder="Clear dental care for families and professionals."
+          helper="One clear sentence about who this is for and why it matters."
+        />
+
+        <TextField
+          label="Services"
+          value={services}
+          onChange={setServices}
+          placeholder="Whitening, Implants, Braces"
+          helper="Separate each service with a comma."
+        />
+
+        <TextField
+          label="Main CTA"
+          value={mainCta}
+          onChange={setMainCta}
+          placeholder="Book Free Consultation"
+          helper="The main conversion button."
+        />
+      </div>
+    ) : activeManualSection === "strategy" ? (
+      <div className="grid gap-5 md:grid-cols-2">
+        <TextField
+          label="Services section title"
+          value={servicesTitle}
+          onChange={setServicesTitle}
+          placeholder="Signature services"
+          helper="Title above the service cards."
+        />
+
+        <TextField
+          label="Service descriptions"
+          value={serviceDescriptions}
+          onChange={setServiceDescriptions}
+          placeholder="Benefit one; Benefit two; Benefit three"
+          helper="Separate each description with a semicolon."
+        />
+
+        <TextField
+          label="Gallery title"
+          value={galleryTitle}
+          onChange={setGalleryTitle}
+          placeholder="A visual reason to book"
+          helper="Title above the image section."
+        />
+
+        <TextField
+          label="Testimonials title"
+          value={testimonialsTitle}
+          onChange={setTestimonialsTitle}
+          placeholder="Client words that build trust"
+          helper="Title above the review section."
+        />
+
+        <TextField
+          label="Contact title"
+          value={contactTitle}
+          onChange={setContactTitle}
+          placeholder="Make the next step feel obvious"
+          helper="Title above the final CTA/contact section."
+        />
+
+        <TextField
+          label="Brand tone"
+          value={brandTone}
+          onChange={setBrandTone}
+          placeholder="Calm, premium, reassuring, and direct."
+          helper="Helps the preview feel intentional."
+        />
+
+        <TextField
+          label="Color suggestions"
+          value={colorSuggestions}
+          onChange={setColorSuggestions}
+          placeholder="Use soft teal accents over a dark premium base."
+          rows={3}
+        />
+
+        <TextField
+          label="Layout suggestions"
+          value={layoutSuggestions}
+          onChange={setLayoutSuggestions}
+          placeholder="Lead with a strong hero, then services, trust proof, gallery, and CTA."
+          rows={3}
+        />
+      </div>
+    ) : activeManualSection === "brand" ? (
+      <div className="grid gap-5 md:grid-cols-2">
+        <TextField
+          label="Logo text"
+          value={logoText}
+          onChange={setLogoText}
+          placeholder="CCS Dental"
+          helper="Shown in the website header."
+        />
+
+        <TextField
+          label="Slogan"
+          value={slogan}
+          onChange={setSlogan}
+          placeholder="Calm, modern dental care."
+          helper="Used as an eyebrow or brand line."
+        />
+
+        <TextField
+          label="Special offer"
+          value={specialOffer}
+          onChange={setSpecialOffer}
+          placeholder="Free smile assessment this month"
+          helper="Small promo badge in the hero."
+        />
+
+        <TextField
+          label="Audience"
+          value={audience}
+          onChange={setAudience}
+          placeholder="Families, professionals, and cosmetic treatment clients"
+          helper="Used to sharpen positioning."
+        />
+
+        <div className="md:col-span-2">
+          <TextField
+            label="Reviews"
+            value={reviews}
+            onChange={setReviews}
+            placeholder="The visit felt calm | Booking was simple | The clinic felt trustworthy"
+            helper="Separate each review with a vertical bar."
+            rows={3}
+          />
+        </div>
+      </div>
+    ) : activeManualSection === "about" ? (
+      <div className="grid gap-5 md:grid-cols-2">
+        <TextField
+          label="About title"
+          value={aboutTitle}
+          onChange={setAboutTitle}
+          placeholder="A calmer clinic experience from first visit"
+        />
+
+        <TextField
+          label="Secondary CTA"
+          value={secondaryCta}
+          onChange={setSecondaryCta}
+          placeholder="View Services"
+        />
+
+        <div className="md:col-span-2">
+          <TextField
+            label="About text"
+            value={aboutText}
+            onChange={setAboutText}
+            placeholder="Explain what makes the business credible, personal, and worth booking."
+            rows={5}
+          />
+        </div>
+      </div>
+    ) : activeManualSection === "contact" ? (
+      <div className="grid gap-5 md:grid-cols-3">
+        <TextField
+          label="Phone / WhatsApp"
+          value={phone}
+          onChange={setPhone}
+          placeholder="+90 555 000 00 00"
+        />
+
+        <TextField
+          label="Location"
+          value={location}
+          onChange={setLocation}
+          placeholder="Istanbul, Turkey"
+        />
+
+        <TextField
+          label="Working hours"
+          value={workingHours}
+          onChange={setWorkingHours}
+          placeholder="Mon-Sat 09:00-18:00"
+        />
+      </div>
+    ) : (
+      <div className="space-y-6">
+        <div className="flex flex-col justify-between gap-4 rounded-2xl border border-[#55f5c6]/20 bg-[#55f5c6]/[0.05] p-5 md:flex-row md:items-center">
+          <div>
+            <p className="text-sm font-semibold text-white">
+              Image direction helper
+            </p>
+            <p className="mt-1 text-sm leading-6 text-white/42">
+              Generate visual guidance from the current client context. Use it
+              for AI image tools or as notes for manual asset selection.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={suggestImageDirection}
+            className="rounded-sm bg-[#55f5c6] px-5 py-3 text-[11px] font-black uppercase tracking-[0.14em] text-[#03110d] transition hover:bg-white"
+          >
+            Suggest Images
+          </button>
+        </div>
+
+        <div className="grid gap-5 md:grid-cols-2">
+          <ImageDropzone
+            label="Logo image"
+            value={logoImage}
+            onChange={setLogoImage}
+            suggestion={imageSuggestions.logoImage}
+          />
+
+          <ImageDropzone
+            label="Hero image"
+            value={heroImage}
+            onChange={setHeroImage}
+            suggestion={imageSuggestions.heroImage}
+          />
+
+          <ImageDropzone
+            label="Gallery images"
+            value={galleryImages}
+            onChange={setGalleryImages}
+            multiple
+            suggestion={imageSuggestions.galleryImages}
+          />
+
+          <ImageDropzone
+            label="Service images"
+            value={serviceImages}
+            onChange={setServiceImages}
+            multiple
+            suggestion={imageSuggestions.serviceImages}
+          />
+
+          <ImageDropzone
+            label="Team images"
+            value={teamImages}
+            onChange={setTeamImages}
+            multiple
+            suggestion={imageSuggestions.teamImages}
+          />
+
+          <ImageDropzone
+            label="Background images"
+            value={backgroundImages}
+            onChange={setBackgroundImages}
+            multiple
+            suggestion={imageSuggestions.backgroundImages}
+          />
+        </div>
+      </div>
+    );
+
+  return (
+    <main className="relative min-h-screen overflow-hidden bg-[#020403] px-5 py-6 text-[#f7f6ed] md:px-8 md:py-8">
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_18%_8%,rgba(85,245,198,0.1),transparent_28%),radial-gradient(circle_at_78%_4%,rgba(85,245,198,0.075),transparent_22%),linear-gradient(180deg,#020403_0%,#050706_70%,#020403_100%)]" />
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-[linear-gradient(rgba(255,255,255,0.018)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.014)_1px,transparent_1px)] bg-[size:84px_84px] opacity-30" />
+
+      <div className="mx-auto max-w-[1500px]">
+        <header className="mb-6 flex flex-col justify-between gap-4 border-b border-white/[0.07] pb-5 md:flex-row md:items-center">
+          <div>
+            <Link
+              href="/"
+              className="text-[12px] font-black uppercase tracking-[0.22em] text-white"
+            >
+              SegMockup
+            </Link>
+
+            <p className="mt-2 text-sm text-white/38">
+              Premium website preview builder by SegLead.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              href="/"
+              className="rounded-sm border border-white/10 bg-white/[0.025] px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.14em] text-white/60 transition hover:border-[#55f5c6]/40 hover:text-[#55f5c6]"
+            >
+              Home
+            </Link>
+
+            <a
+              href="https://seglead.com"
+              className="rounded-sm border border-white/10 bg-white/[0.025] px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.14em] text-white/60 transition hover:border-[#55f5c6]/40 hover:text-[#55f5c6]"
+            >
+              SegLead
+            </a>
+
+            <button
+              type="button"
+              onClick={generateMockup}
+              className="rounded-sm bg-[#55f5c6] px-5 py-2.5 text-[11px] font-black uppercase tracking-[0.14em] text-[#03110d] shadow-[0_0_30px_rgba(85,245,198,0.18)] transition hover:-translate-y-0.5 hover:bg-white"
+            >
+              Generate Mockup
+            </button>
+          </div>
+        </header>
+
+        <div className="grid gap-6 xl:grid-cols-[310px_minmax(0,1fr)_320px] xl:items-start">
+          <aside className="xl:sticky xl:top-6">
+            <div className="rounded-2xl border border-white/[0.075] bg-white/[0.045] p-5 shadow-2xl shadow-black/35 backdrop-blur-2xl">
+              <p className="text-[10px] font-black uppercase tracking-[0.26em] text-[#55f5c6]">
                 Client Mockup Builder
               </p>
 
-              <h1 className="mt-4 max-w-xs text-4xl font-semibold leading-none tracking-tight text-[#fff8ec]">
-                Luxury mockups, composed faster.
+              <h1 className="mt-4 text-4xl font-semibold uppercase leading-[0.9] tracking-[-0.06em] text-white">
+                Build sharp previews faster.
               </h1>
 
-              <p className="mt-4 text-sm leading-6 text-[#b6aa93]">
-                Fill the first five recommended fields for a useful preview.
-                Add images and reviews only when you have them.
+              <p className="mt-4 text-sm leading-6 text-white/42">
+                Use AI for the first draft, then fine-tune manually only where
+                needed.
               </p>
 
-              <div className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-2">
-                <div className="grid grid-cols-2 gap-2">
+              <div className="mt-6 rounded-xl border border-white/10 bg-black/25 p-1.5">
+                <div className="grid grid-cols-2 gap-1.5">
                   <button
                     type="button"
                     onClick={() => setMode("ai")}
-                    className={`rounded-xl px-4 py-3 text-sm font-semibold transition ${
+                    className={cn(
+                      "rounded-lg px-4 py-3 text-sm font-semibold transition",
                       mode === "ai"
-                        ? "bg-[#d7b46a] text-[#17110a] shadow-lg shadow-[#d7b46a]/20"
-                        : "text-[#b6aa93] hover:bg-white/10 hover:text-[#fff8ec]"
-                    }`}
+                        ? "bg-[#55f5c6] text-[#03110d] shadow-[0_0_22px_rgba(85,245,198,0.16)]"
+                        : "text-white/42 hover:bg-white/[0.06] hover:text-white",
+                    )}
                   >
-                    AI Assisted
+                    AI Studio
                   </button>
+
                   <button
                     type="button"
                     onClick={() => setMode("manual")}
-                    className={`rounded-xl px-4 py-3 text-sm font-semibold transition ${
+                    className={cn(
+                      "rounded-lg px-4 py-3 text-sm font-semibold transition",
                       mode === "manual"
-                        ? "bg-[#d7b46a] text-[#17110a] shadow-lg shadow-[#d7b46a]/20"
-                        : "text-[#b6aa93] hover:bg-white/10 hover:text-[#fff8ec]"
-                    }`}
+                        ? "bg-[#55f5c6] text-[#03110d] shadow-[0_0_22px_rgba(85,245,198,0.16)]"
+                        : "text-white/42 hover:bg-white/[0.06] hover:text-white",
+                    )}
                   >
-                    Manual Builder
+                    Manual
                   </button>
-                </div>
-              </div>
-
-              <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.055] p-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-semibold text-[#d9c9ad]">
-                    Preview readiness
-                  </span>
-                  <span className="font-semibold text-[#fff8ec]">
-                    {helpfulFields}/5
-                  </span>
-                </div>
-                <div className="mt-3 h-2 rounded-full bg-black/30">
-                  <div
-                    className="h-2 rounded-full bg-gradient-to-r from-[#a8792e] via-[#d7b46a] to-[#fff0bd] transition-all"
-                    style={{ width: `${(helpfulFields / 5) * 100}%` }}
-                  />
-                </div>
-              </div>
-
-              <div className="mt-5 overflow-hidden rounded-[1.5rem] border border-[#d7b46a]/20 bg-gradient-to-br from-[#21170d] via-[#11100d] to-black p-4 shadow-xl shadow-black/30">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.22em] text-[#d7b46a]">
-                      Preview area
-                    </p>
-                    <p className="mt-2 text-lg font-semibold text-[#fff8ec]">
-                      {businessName || "Untitled client"}
-                    </p>
-                  </div>
-                  <div
-                    className="h-10 w-10 rounded-full"
-                    style={{ background: primaryColor }}
-                  />
-                </div>
-                <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.06] p-4">
-                  <p className="text-sm font-medium text-[#fff8ec]">
-                    {heroHeadline || "Hero headline preview"}
-                  </p>
-                  <p className="mt-2 line-clamp-2 text-xs leading-5 text-[#a99b83]">
-                    {heroDescription ||
-                      "Your most important client message appears here."}
-                  </p>
                 </div>
               </div>
 
               <div className="mt-6">
-                <p className="text-sm font-semibold text-[#fff8ec]">
+                <p className="text-sm font-semibold text-white">
                   Quick starters
                 </p>
+
                 <div className="mt-3 grid gap-2">
                   {starters.map((starter) => (
                     <button
                       key={starter.label}
                       type="button"
                       onClick={() => applyStarter(starter)}
-                      className="rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3 text-left text-sm font-semibold text-[#d9c9ad] transition hover:-translate-y-0.5 hover:border-[#d7b46a]/45 hover:bg-[#d7b46a]/10 hover:text-[#fff8ec]"
+                      className="rounded-xl border border-white/10 bg-white/[0.035] px-4 py-3 text-left text-sm font-semibold text-white/55 transition hover:-translate-y-0.5 hover:border-[#55f5c6]/45 hover:bg-[#55f5c6]/[0.06] hover:text-white"
                     >
                       {starter.label}
                     </button>
@@ -766,515 +1314,473 @@ export default function MockupPage() {
                 </div>
               </div>
 
-              <div className="mt-6 space-y-3 text-sm leading-6 text-[#a99b83]">
-                <p>
-                  Start with business name, hero headline, hero description,
-                  services, and CTA.
+              {mode === "manual" ? (
+                <div className="mt-6">
+                  <p className="text-sm font-semibold text-white">
+                    Manual sections
+                  </p>
+
+                  <div className="mt-3 grid gap-2">
+                    {manualSections.map((section) => (
+                      <button
+                        key={section.id}
+                        type="button"
+                        onClick={() => setActiveManualSection(section.id)}
+                        className={cn(
+                          "rounded-xl border px-4 py-3 text-left transition",
+                          activeManualSection === section.id
+                            ? "border-[#55f5c6]/45 bg-[#55f5c6]/[0.08]"
+                            : "border-white/10 bg-white/[0.03] hover:border-[#55f5c6]/30 hover:bg-white/[0.055]",
+                        )}
+                      >
+                        <span className="block text-sm font-semibold text-white">
+                          {section.label}
+                        </span>
+                        <span className="mt-1 block text-xs leading-5 text-white/35">
+                          {section.description}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </aside>
+
+          <div className="space-y-6">
+            {mode === "ai" ? (
+              <>
+                <Section
+                  eyebrow="AI Studio"
+                  title="Premium brief composer"
+                  description="Describe the client once. AI will create the first draft, then you can adjust every field before previewing."
+                  action={
+                    <div className="rounded-full border border-[#55f5c6]/20 bg-[#55f5c6]/[0.06] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-[#55f5c6]">
+                      Prompt {promptStrength}%
+                    </div>
+                  }
+                >
+                  <div className="grid gap-5 lg:grid-cols-[1fr_240px]">
+                    <div>
+                      <TextField
+                        label="Client context"
+                        value={clientContext}
+                        onChange={setClientContext}
+                        placeholder="Example: Premium dentist clinic in Istanbul for families and professionals. Wants a calm trustworthy website focused on appointments."
+                        rows={7}
+                        helper="Mention the business type, audience, tone, offer, services, location, and booking goal."
+                      />
+
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {promptStarters.map((prompt) => (
+                          <button
+                            key={prompt.label}
+                            type="button"
+                            onClick={() => {
+                              setClientContext(prompt.value);
+                              setIndustry(
+                                prompt.label === "Salon"
+                                  ? "salon"
+                                  : prompt.label === "Car Rental"
+                                    ? "car"
+                                    : "dentist",
+                              );
+                            }}
+                            className="rounded-full border border-white/10 bg-white/[0.035] px-3 py-2 text-[11px] font-black uppercase tracking-[0.14em] text-white/50 transition hover:border-[#55f5c6]/45 hover:text-[#55f5c6]"
+                          >
+                            {prompt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-[#55f5c6]/20 bg-[radial-gradient(circle_at_70%_20%,rgba(85,245,198,0.16),transparent_28%),linear-gradient(180deg,rgba(85,245,198,0.06),rgba(255,255,255,0.02))] p-5">
+                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#55f5c6]">
+                        AI Output
+                      </p>
+
+                      <p className="mt-4 text-2xl font-semibold leading-none tracking-[-0.04em] text-white">
+                        Strategy, copy, sections and visual direction.
+                      </p>
+
+                      <p className="mt-4 text-sm leading-6 text-white/42">
+                        Best results come from a specific brief with audience,
+                        tone, services, and conversion goal.
+                      </p>
+
+                      <button
+                        type="button"
+                        onClick={generateWithAi}
+                        disabled={aiLoading}
+                        className="mt-6 w-full rounded-sm bg-[#55f5c6] px-5 py-4 text-[12px] font-black uppercase tracking-[0.14em] text-[#03110d] shadow-[0_0_30px_rgba(85,245,198,0.16)] transition hover:-translate-y-0.5 hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {aiLoading ? "Generating..." : "Generate with AI"}
+                      </button>
+                    </div>
+                  </div>
+
+                  {aiError ? (
+                    <div className="mt-5 rounded-xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-100">
+                      {aiError}
+                    </div>
+                  ) : null}
+                </Section>
+
+                <Section
+                  eyebrow="Review"
+                  title="AI result editor"
+                  description="Keep AI mode premium by showing the important review fields in groups instead of one long form."
+                >
+                  <div className="space-y-3">
+                    <DetailGroup
+                      title="Core page content"
+                      description="Business name, hero, services, and CTA."
+                      defaultOpen
+                    >
+                      <div className="grid gap-5 md:grid-cols-2">
+                        <TextField
+                          label="Business name"
+                          value={businessName}
+                          onChange={setBusinessName}
+                          placeholder="CCS Dental"
+                        />
+
+                        <SelectField
+                          label="Industry"
+                          value={industry}
+                          onChange={(value) => setIndustry(value as Industry)}
+                          options={industries}
+                        />
+
+                        <TextField
+                          label="Hero headline"
+                          value={heroHeadline}
+                          onChange={setHeroHeadline}
+                          placeholder="Premium dental care for modern families"
+                        />
+
+                        <TextField
+                          label="Hero description"
+                          value={heroDescription}
+                          onChange={setHeroDescription}
+                          placeholder="Premium dental care for families and professionals."
+                        />
+
+                        <TextField
+                          label="Services"
+                          value={services}
+                          onChange={setServices}
+                          placeholder="Whitening, Implants, Braces"
+                        />
+
+                        <TextField
+                          label="Main CTA"
+                          value={mainCta}
+                          onChange={setMainCta}
+                          placeholder="Book Free Consultation"
+                        />
+                      </div>
+                    </DetailGroup>
+
+                    <DetailGroup
+                      title="Strategy and section plan"
+                      description="Tone, section titles, service descriptions, and layout logic."
+                    >
+                      <div className="grid gap-5 md:grid-cols-2">
+                        <TextField
+                          label="Services title"
+                          value={servicesTitle}
+                          onChange={setServicesTitle}
+                          placeholder="Signature services"
+                        />
+
+                        <TextField
+                          label="Gallery title"
+                          value={galleryTitle}
+                          onChange={setGalleryTitle}
+                          placeholder="A visual reason to book"
+                        />
+
+                        <TextField
+                          label="Testimonials title"
+                          value={testimonialsTitle}
+                          onChange={setTestimonialsTitle}
+                          placeholder="Client words that build trust"
+                        />
+
+                        <TextField
+                          label="Contact title"
+                          value={contactTitle}
+                          onChange={setContactTitle}
+                          placeholder="Make the next step feel obvious"
+                        />
+
+                        <TextField
+                          label="Brand tone"
+                          value={brandTone}
+                          onChange={setBrandTone}
+                          placeholder="Calm, premium, reassuring, and direct."
+                        />
+
+                        <TextField
+                          label="Service descriptions"
+                          value={serviceDescriptions}
+                          onChange={setServiceDescriptions}
+                          placeholder="Benefit one; Benefit two; Benefit three"
+                        />
+
+                        <TextField
+                          label="Color suggestions"
+                          value={colorSuggestions}
+                          onChange={setColorSuggestions}
+                          placeholder="Use teal accents over a dark premium base."
+                          rows={3}
+                        />
+
+                        <TextField
+                          label="Layout suggestions"
+                          value={layoutSuggestions}
+                          onChange={setLayoutSuggestions}
+                          placeholder="Lead with a strong hero, then services, trust proof, gallery, and CTA."
+                          rows={3}
+                        />
+                      </div>
+                    </DetailGroup>
+
+                    <DetailGroup
+                      title="Brand, trust and contact"
+                      description="Offer, audience, reviews, location, and phone details."
+                    >
+                      <div className="grid gap-5 md:grid-cols-2">
+                        <TextField
+                          label="Logo text"
+                          value={logoText}
+                          onChange={setLogoText}
+                          placeholder="CCS Dental"
+                        />
+
+                        <TextField
+                          label="Slogan"
+                          value={slogan}
+                          onChange={setSlogan}
+                          placeholder="Calm, modern dental care."
+                        />
+
+                        <TextField
+                          label="Special offer"
+                          value={specialOffer}
+                          onChange={setSpecialOffer}
+                          placeholder="Free smile assessment this month"
+                        />
+
+                        <TextField
+                          label="Audience"
+                          value={audience}
+                          onChange={setAudience}
+                          placeholder="Families, professionals, and cosmetic treatment clients"
+                        />
+
+                        <TextField
+                          label="Phone"
+                          value={phone}
+                          onChange={setPhone}
+                          placeholder="+90 555 000 00 00"
+                        />
+
+                        <TextField
+                          label="Location"
+                          value={location}
+                          onChange={setLocation}
+                          placeholder="Istanbul, Turkey"
+                        />
+
+                        <div className="md:col-span-2">
+                          <TextField
+                            label="Reviews"
+                            value={reviews}
+                            onChange={setReviews}
+                            placeholder="The visit felt calm | Booking was simple | The clinic felt trustworthy"
+                            rows={3}
+                          />
+                        </div>
+                      </div>
+                    </DetailGroup>
+                  </div>
+                </Section>
+              </>
+            ) : (
+              <Section
+                eyebrow="Manual Builder"
+                title={
+                  manualSections.find(
+                    (section) => section.id === activeManualSection,
+                  )?.label || "Manual Builder"
+                }
+                description={
+                  manualSections.find(
+                    (section) => section.id === activeManualSection,
+                  )?.description ||
+                  "Edit the mockup in smaller, easier sections."
+                }
+              >
+                <div className="mb-5 grid gap-2 sm:grid-cols-2 lg:hidden">
+                  {manualSections.map((section) => (
+                    <button
+                      key={section.id}
+                      type="button"
+                      onClick={() => setActiveManualSection(section.id)}
+                      className={cn(
+                        "rounded-xl border px-4 py-3 text-left text-sm font-semibold transition",
+                        activeManualSection === section.id
+                          ? "border-[#55f5c6]/45 bg-[#55f5c6]/[0.08] text-white"
+                          : "border-white/10 bg-white/[0.03] text-white/45",
+                      )}
+                    >
+                      {section.label}
+                    </button>
+                  ))}
+                </div>
+
+                {manualContent}
+              </Section>
+            )}
+          </div>
+
+          <aside className="space-y-6 xl:sticky xl:top-6">
+            <div className="rounded-2xl border border-white/[0.075] bg-white/[0.045] p-5 shadow-2xl shadow-black/35 backdrop-blur-2xl">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#55f5c6]">
+                    Readiness
+                  </p>
+                  <p className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-white">
+                    {helpfulFields}/5 fields
+                  </p>
+                </div>
+
+                <div className="flex h-14 w-14 items-center justify-center rounded-full border border-[#55f5c6]/30 bg-[#55f5c6]/10 text-sm font-black text-[#55f5c6]">
+                  {readinessPercent}%
+                </div>
+              </div>
+
+              <div className="mt-5 h-2 rounded-full bg-black/30">
+                <div
+                  className="h-2 rounded-full bg-[#55f5c6] shadow-[0_0_20px_rgba(85,245,198,0.35)] transition-all"
+                  style={{ width: `${readinessPercent}%` }}
+                />
+              </div>
+
+              <div className="mt-5 grid gap-2">
+                {readinessItems.map((item) => (
+                  <div
+                    key={item.label}
+                    className="flex items-center justify-between rounded-xl border border-white/10 bg-black/20 px-3 py-2"
+                  >
+                    <span className="text-sm text-white/45">{item.label}</span>
+                    <span
+                      className={cn(
+                        "h-2 w-2 rounded-full",
+                        item.done ? "bg-[#55f5c6]" : "bg-white/15",
+                      )}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="overflow-hidden rounded-2xl border border-[#55f5c6]/20 bg-[radial-gradient(circle_at_70%_10%,rgba(85,245,198,0.13),transparent_30%),linear-gradient(180deg,#07100d,#030504)] p-5 shadow-2xl shadow-black/35">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#55f5c6]">
+                    Live Snapshot
+                  </p>
+
+                  <p className="mt-2 text-xl font-semibold tracking-[-0.04em] text-white">
+                    {businessName || "Untitled client"}
+                  </p>
+                </div>
+
+                <div
+                  className="h-10 w-10 rounded-full border border-white/10"
+                  style={{ background: safeColor(primaryColor) }}
+                />
+              </div>
+
+              <div className="mt-6 rounded-xl border border-white/10 bg-black/30 p-4">
+                <p className="text-lg font-semibold leading-tight tracking-[-0.04em] text-white">
+                  {heroHeadline || "Hero headline preview"}
                 </p>
-                <p>
-                  Image URLs are optional. The preview will use clean fallback
-                  visuals when they are empty.
+
+                <p className="mt-3 text-sm leading-6 text-white/42">
+                  {heroDescription ||
+                    "Your main client message appears here before the full preview is generated."}
                 </p>
+
+                <div className="mt-5 flex flex-wrap gap-2">
+                  {(services || "Service one, Service two, Service three")
+                    .split(",")
+                    .map((service) => service.trim())
+                    .filter(Boolean)
+                    .slice(0, 3)
+                    .map((service) => (
+                      <span
+                        key={service}
+                        className="rounded-full border border-white/10 px-3 py-1 text-[10px] uppercase tracking-[0.12em] text-white/38"
+                      >
+                        {service}
+                      </span>
+                    ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-white/[0.075] bg-white/[0.045] p-5 shadow-2xl shadow-black/35 backdrop-blur-2xl">
+              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#55f5c6]">
+                Visual Style
+              </p>
+
+              <div className="mt-5 space-y-4">
+                <SelectField
+                  label="Style"
+                  value={style}
+                  onChange={(value) => setStyle(value as MockupStyle)}
+                  options={styleOptions}
+                />
+
+                <ColorField
+                  label="Primary"
+                  value={primaryColor}
+                  onChange={setPrimaryColor}
+                />
+
+                <ColorField
+                  label="Background"
+                  value={secondaryColor}
+                  onChange={setSecondaryColor}
+                />
+
+                <ColorField
+                  label="Accent"
+                  value={accentColor}
+                  onChange={setAccentColor}
+                />
+
+                <ColorField
+                  label="Text"
+                  value={textColor}
+                  onChange={setTextColor}
+                />
               </div>
 
               <button
                 type="button"
                 onClick={generateMockup}
-                className="mt-6 w-full rounded-2xl bg-gradient-to-r from-[#b9893d] via-[#d7b46a] to-[#f7dfaa] px-5 py-4 font-semibold text-[#17110a] shadow-xl shadow-[#d7b46a]/20 transition hover:-translate-y-0.5 hover:shadow-[#d7b46a]/30"
+                className="mt-6 w-full rounded-sm bg-[#55f5c6] px-5 py-4 text-[12px] font-black uppercase tracking-[0.14em] text-[#03110d] shadow-[0_0_30px_rgba(85,245,198,0.18)] transition hover:-translate-y-0.5 hover:bg-white"
               >
                 Generate Mockup
               </button>
             </div>
           </aside>
-
-          <div className="space-y-5">
-            {mode === "ai" ? (
-              <Section
-                title="AI Assisted"
-              description="Describe the client once. AI will fill the manual fields below, and you can edit every result before previewing."
-            >
-              <div className="grid gap-5 md:grid-cols-[1fr_auto] md:items-end">
-                <TextField
-                  label="Client context"
-                  value={clientContext}
-                  onChange={setClientContext}
-                  placeholder="Example: Premium dentist clinic in Istanbul for families and professionals. Wants a calm trustworthy website focused on appointments."
-                  helper="Mention the business type, city, audience, tone, offer, and booking goal if you know them."
-                  rows={4}
-                />
-
-                <button
-                  type="button"
-                  onClick={generateWithAi}
-                  disabled={aiLoading}
-                  className="rounded-2xl bg-gradient-to-r from-[#b9893d] via-[#d7b46a] to-[#f7dfaa] px-6 py-4 font-semibold text-[#17110a] shadow-xl shadow-[#d7b46a]/20 transition hover:-translate-y-0.5 hover:shadow-[#d7b46a]/30 disabled:cursor-not-allowed disabled:from-[#4c4437] disabled:via-[#5b5142] disabled:to-[#5b5142] disabled:text-[#a99b83] md:min-w-44"
-                >
-                  {aiLoading ? "Generating..." : "Generate with AI"}
-                </button>
-              </div>
-
-              {aiError ? (
-                <p className="mt-4 rounded-2xl border border-red-400/25 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-200">
-                  {aiError}
-                </p>
-              ) : null}
-              </Section>
-            ) : null}
-
-            <Section
-              title={mode === "ai" ? "1. Review generated content" : "1. Manual Builder"}
-              description="The preview can already feel client-specific with these core details."
-            >
-              <div className="grid gap-5 md:grid-cols-2">
-                <TextField
-                  label="Business name"
-                  value={businessName}
-                  onChange={setBusinessName}
-                  placeholder="CCS Dental"
-                  helper="Used in the logo, hero, reviews, and contact section."
-                />
-
-                <div>
-                  <label className="text-sm font-medium text-[#d9c9ad]">
-                    Industry
-                  </label>
-                  <select
-                    value={industry}
-                    onChange={(e) => setIndustry(e.target.value as Industry)}
-                    className="mt-2 w-full rounded-2xl border border-white/10 bg-[#14100c] px-4 py-3 text-[#fff8ec] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] outline-none transition hover:border-[#d7b46a]/40 focus:border-[#d7b46a]/70 focus:ring-4 focus:ring-[#d7b46a]/10"
-                  >
-                    {industries.map((item) => (
-                      <option key={item.value} value={item.value}>
-                        {item.label}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="mt-2 text-xs text-[#9f927a]">
-                    Switches between the dentist, salon, and automotive website design.
-                  </p>
-                </div>
-
-                <TextField
-                  label="Hero headline"
-                  value={heroHeadline}
-                  onChange={setHeroHeadline}
-                  placeholder="Premium dental care for modern families"
-                  helper="The main headline visitors see first."
-                />
-
-                <TextField
-                  label="Hero description"
-                  value={heroDescription}
-                  onChange={setHeroDescription}
-                  placeholder="Premium dental care for families and professionals"
-                  helper="One clear sentence about who this is for and why it matters."
-                />
-
-                <TextField
-                  label="Services"
-                  value={services}
-                  onChange={setServices}
-                  placeholder="Whitening, Implants, Braces"
-                  helper="Separate each service with a comma."
-                />
-
-                <TextField
-                  label="Main CTA"
-                  value={mainCta}
-                  onChange={setMainCta}
-                  placeholder="Book Free Consultation"
-                  helper="The main booking button text."
-                />
-              </div>
-            </Section>
-
-            <Section
-              title="2. AI strategy and section plan"
-              description="Editable AI suggestions for tone, colors, layout, section titles, and service descriptions."
-            >
-              <div className="grid gap-5 md:grid-cols-2">
-                <TextField
-                  label="Services section title"
-                  value={servicesTitle}
-                  onChange={setServicesTitle}
-                  placeholder="Signature services"
-                />
-
-                <TextField
-                  label="Service descriptions"
-                  value={serviceDescriptions}
-                  onChange={setServiceDescriptions}
-                  placeholder="A concise benefit for service one; A concise benefit for service two"
-                  helper="Separate each description with a semicolon."
-                />
-
-                <TextField
-                  label="Gallery title"
-                  value={galleryTitle}
-                  onChange={setGalleryTitle}
-                  placeholder="A visual reason to book"
-                />
-
-                <TextField
-                  label="Testimonials title"
-                  value={testimonialsTitle}
-                  onChange={setTestimonialsTitle}
-                  placeholder="Client words that build trust"
-                />
-
-                <TextField
-                  label="Contact title"
-                  value={contactTitle}
-                  onChange={setContactTitle}
-                  placeholder="Make the next step feel obvious"
-                />
-
-                <TextField
-                  label="Brand tone"
-                  value={brandTone}
-                  onChange={setBrandTone}
-                  placeholder="Calm, premium, reassuring, and direct."
-                />
-              </div>
-
-              <div className="mt-5 grid gap-5 md:grid-cols-2">
-                <TextField
-                  label="Color suggestions"
-                  value={colorSuggestions}
-                  onChange={setColorSuggestions}
-                  placeholder="Use champagne accents over a dark luxury base."
-                  rows={3}
-                />
-
-                <TextField
-                  label="Layout suggestions"
-                  value={layoutSuggestions}
-                  onChange={setLayoutSuggestions}
-                  placeholder="Lead with a strong hero, then services, trust proof, gallery, and CTA."
-                  rows={3}
-                />
-              </div>
-            </Section>
-
-            <Section
-              title="3. Brand and trust"
-              description="These details make the mockup feel less generic without needing real assets."
-            >
-              <div className="grid gap-5 md:grid-cols-2">
-                <TextField
-                  label="Logo text"
-                  value={logoText}
-                  onChange={setLogoText}
-                  placeholder="CCS Dental"
-                />
-
-                <TextField
-                  label="Slogan"
-                  value={slogan}
-                  onChange={setSlogan}
-                  placeholder="Calm, modern dental care."
-                />
-
-                <TextField
-                  label="Special offer"
-                  value={specialOffer}
-                  onChange={setSpecialOffer}
-                  placeholder="Free smile assessment this month"
-                />
-
-                <TextField
-                  label="Audience"
-                  value={audience}
-                  onChange={setAudience}
-                  placeholder="Families, professionals, and cosmetic treatment clients"
-                />
-              </div>
-            </Section>
-
-            <Section
-              title="3. About section"
-              description="Use this to explain why the client is credible, premium, or different."
-            >
-              <div className="grid gap-5 md:grid-cols-2">
-                <TextField
-                  label="About title"
-                  value={aboutTitle}
-                  onChange={setAboutTitle}
-                  placeholder="A calmer clinic experience from first visit"
-                />
-
-                <TextField
-                  label="Secondary CTA"
-                  value={secondaryCta}
-                  onChange={setSecondaryCta}
-                  placeholder="View Services"
-                />
-              </div>
-
-              <div className="mt-5">
-                <TextField
-                  label="About text"
-                  value={aboutText}
-                  onChange={setAboutText}
-                  placeholder="Tell visitors what makes the business credible, personal, and worth booking."
-                  rows={4}
-                />
-              </div>
-            </Section>
-
-            <Section
-              title="4. Contact details"
-              description="These appear near the booking area so the preview feels like a real local business."
-            >
-              <div className="grid gap-5 md:grid-cols-5">
-                <TextField
-                  label="Phone / WhatsApp"
-                  value={phone}
-                  onChange={setPhone}
-                  placeholder="+90 555 000 00 00"
-                />
-
-                <TextField
-                  label="Location"
-                  value={location}
-                  onChange={setLocation}
-                  placeholder="Istanbul, Turkey"
-                />
-
-                <TextField
-                  label="Working hours"
-                  value={workingHours}
-                  onChange={setWorkingHours}
-                  placeholder="Mon-Sat 09:00-18:00"
-                />
-              </div>
-            </Section>
-
-            <details className="group rounded-[1.75rem] border border-white/10 bg-[#17140f]/75 shadow-2xl shadow-black/20 backdrop-blur-xl transition hover:border-[#d7b46a]/25">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5 md:p-6">
-                <div>
-                  <h2 className="text-base font-semibold text-[#fff8ec]">
-                    Images, background and reviews
-                  </h2>
-                  <p className="mt-1 text-sm text-[#a99b83]">
-                    Upload files, paste image URLs, or use AI-suggested image
-                    directions as placeholders.
-                  </p>
-                </div>
-                <span className="rounded-full border border-white/10 bg-white/[0.055] px-4 py-2 text-sm font-semibold text-[#d9c9ad] group-open:hidden">
-                  Open
-                </span>
-                <span className="hidden rounded-full bg-[#d7b46a] px-4 py-2 text-sm font-semibold text-[#17110a] group-open:inline">
-                  Close
-                </span>
-              </summary>
-
-              <div className="border-t border-white/10 p-5 md:p-6">
-                <div className="mb-5 flex flex-col justify-between gap-3 rounded-2xl border border-[#d7b46a]/20 bg-[#d7b46a]/10 p-4 md:flex-row md:items-center">
-                  <div>
-                    <p className="text-sm font-semibold text-[#fff8ec]">
-                      AI-assisted image direction
-                    </p>
-                    <p className="mt-1 text-xs leading-5 text-[#a99b83]">
-                      Uses your client context and current copy to suggest what
-                      each image slot should contain.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={suggestImageDirection}
-                    className="rounded-2xl border border-[#d7b46a]/40 px-4 py-3 text-sm font-semibold text-[#f7dfaa] transition hover:bg-[#d7b46a]/15"
-                  >
-                    Suggest image plan
-                  </button>
-                </div>
-
-                <div className="grid gap-5 md:grid-cols-2">
-                  <ImageDropzone
-                    label="Logo image"
-                    value={logoImage}
-                    onChange={setLogoImage}
-                    suggestion={imageSuggestions.logoImage}
-                  />
-
-                  <ImageDropzone
-                    label="Hero image"
-                    value={heroImage}
-                    onChange={setHeroImage}
-                    suggestion={imageSuggestions.heroImage}
-                  />
-
-                  <ImageDropzone
-                    label="Service images"
-                    value={serviceImages}
-                    onChange={setServiceImages}
-                    multiple
-                    suggestion={imageSuggestions.serviceImages}
-                  />
-
-                  <ImageDropzone
-                    label="Gallery images"
-                    value={galleryImages}
-                    onChange={setGalleryImages}
-                    multiple
-                    suggestion={imageSuggestions.galleryImages}
-                  />
-
-                  <ImageDropzone
-                    label="Team images"
-                    value={teamImages}
-                    onChange={setTeamImages}
-                    multiple
-                    suggestion={imageSuggestions.teamImages}
-                  />
-
-                  <ImageDropzone
-                    label="Background images"
-                    value={backgroundImages}
-                    onChange={setBackgroundImages}
-                    multiple
-                    suggestion={imageSuggestions.backgroundImages}
-                  />
-                </div>
-
-                <div className="mt-6 grid gap-5 md:grid-cols-2">
-                  <TextField
-                    label="Logo image URL"
-                    value={logoImage}
-                    onChange={setLogoImage}
-                    placeholder="https://example.com/logo.png"
-                  />
-
-                  <TextField
-                    label="Hero image URL"
-                    value={heroImage}
-                    onChange={setHeroImage}
-                    placeholder="https://example.com/clinic.jpg"
-                  />
-
-                  <TextField
-                    label="Service image URLs"
-                    value={serviceImages}
-                    onChange={setServiceImages}
-                    placeholder="https://example.com/service-1.jpg, https://example.com/service-2.jpg"
-                    helper="Comma separated."
-                  />
-
-                  <TextField
-                    label="Gallery image URLs"
-                    value={galleryImages}
-                    onChange={setGalleryImages}
-                    placeholder="https://example.com/photo-1.jpg, https://example.com/photo-2.jpg"
-                    helper="Comma separated."
-                  />
-
-                  <TextField
-                    label="Team image URLs"
-                    value={teamImages}
-                    onChange={setTeamImages}
-                    placeholder="https://example.com/team-1.jpg, https://example.com/team-2.jpg"
-                    helper="Comma separated."
-                  />
-
-                  <TextField
-                    label="Background image URLs"
-                    value={backgroundImages}
-                    onChange={setBackgroundImages}
-                    placeholder="https://example.com/background.jpg"
-                    helper="Comma separated."
-                  />
-                </div>
-
-                <div className="mt-5">
-                  <TextField
-                    label="Reviews"
-                    value={reviews}
-                    onChange={setReviews}
-                    placeholder="Amazing service | Beautiful result | Easy booking"
-                    helper="Separate reviews with the | symbol."
-                  />
-                </div>
-              </div>
-            </details>
-
-            <Section
-              title="5. Visual style"
-              description="Small styling controls for the generated page."
-            >
-              <div className="grid gap-5 md:grid-cols-5">
-                <div>
-                  <label className="text-sm font-medium text-[#d9c9ad]">
-                    Style
-                  </label>
-                  <select
-                    value={style}
-                    onChange={(e) => setStyle(e.target.value as MockupStyle)}
-                    className="mt-2 w-full rounded-2xl border border-white/10 bg-[#14100c] px-4 py-3 text-[#fff8ec] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] outline-none transition hover:border-[#d7b46a]/40 focus:border-[#d7b46a]/70 focus:ring-4 focus:ring-[#d7b46a]/10"
-                  >
-                    <option value="basic">Basic</option>
-                    <option value="luxury">Luxury</option>
-                    <option value="bold">Bold</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-[#d9c9ad]">
-                    Primary color
-                  </label>
-                  <input
-                    type="color"
-                    value={primaryColor}
-                    onChange={(e) => setPrimaryColor(e.target.value)}
-                    className="mt-2 h-12 w-full rounded-2xl border border-white/10 bg-white/[0.055] p-1"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-[#d9c9ad]">
-                    Background color
-                  </label>
-                  <input
-                    type="color"
-                    value={secondaryColor}
-                    onChange={(e) => setSecondaryColor(e.target.value)}
-                    className="mt-2 h-12 w-full rounded-2xl border border-white/10 bg-white/[0.055] p-1"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-[#d9c9ad]">
-                    Accent color
-                  </label>
-                  <input
-                    type="color"
-                    value={accentColor}
-                    onChange={(e) => setAccentColor(e.target.value)}
-                    className="mt-2 h-12 w-full rounded-2xl border border-white/10 bg-white/[0.055] p-1"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-[#d9c9ad]">
-                    Text color
-                  </label>
-                  <input
-                    type="color"
-                    value={textColor}
-                    onChange={(e) => setTextColor(e.target.value)}
-                    className="mt-2 h-12 w-full rounded-2xl border border-white/10 bg-white/[0.055] p-1"
-                  />
-                </div>
-              </div>
-            </Section>
-
-            <button
-              type="button"
-              onClick={generateMockup}
-              className="w-full rounded-2xl bg-gradient-to-r from-[#b9893d] via-[#d7b46a] to-[#f7dfaa] px-5 py-4 font-semibold text-[#17110a] shadow-xl shadow-[#d7b46a]/20 transition hover:-translate-y-0.5 hover:shadow-[#d7b46a]/30"
-            >
-              Generate Mockup
-            </button>
-          </div>
         </div>
       </div>
     </main>
