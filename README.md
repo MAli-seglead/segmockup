@@ -2,6 +2,15 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+Create a `.env.local` file in the project root with the API keys used by the mockup generator:
+
+```bash
+GEMINI_API_KEY=your_google_ai_studio_key
+PEXELS_API_KEY=your_pexels_key
+```
+
+`GEMINI_API_KEY` must be a Google AI Studio/Gemini key. If you add or change values in `.env.local`, restart the dev server so Next.js loads them.
+
 First, run the development server:
 
 ```bash

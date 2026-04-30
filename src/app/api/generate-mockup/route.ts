@@ -408,11 +408,14 @@ function buildPrompt({
 }
 
 export async function POST(request: Request) {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
 
   if (!apiKey) {
     return NextResponse.json(
-      { error: "GEMINI_API_KEY is not configured." },
+      {
+        error:
+          "GEMINI_API_KEY is not configured. Add it to .env.local at the project root, then restart the dev server.",
+      },
       { status: 500 },
     );
   }

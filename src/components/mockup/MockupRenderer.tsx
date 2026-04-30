@@ -32,11 +32,11 @@ const variantShell: Record<SectionVariant, string> = {
 
 const fallbackThemes: Record<SectionVariant, ColorTheme> = {
   luxury: {
-    primary: "#d7b46a",
-    secondary: "#17130f",
-    accent: "#f7dfaa",
-    background: "#0b0907",
-    text: "#f8efe3",
+    primary: "#55f5c6",
+    secondary: "#07100d",
+    accent: "#f7f6ed",
+    background: "#020403",
+    text: "#f7f6ed",
   },
   basic: {
     primary: "#2563eb",
@@ -46,12 +46,18 @@ const fallbackThemes: Record<SectionVariant, ColorTheme> = {
     text: "#0f172a",
   },
   bold: {
-    primary: "#fff200",
+    primary: "#55f5c6",
     secondary: "#ffffff",
     accent: "#ff4d00",
     background: "#050505",
     text: "#ffffff",
   },
+};
+
+const fallbackServices = {
+  car: ["Luxury SUV", "Executive Sedan", "Sports Coupe"],
+  salon: ["Hair Styling", "Skin Care", "Nail Design"],
+  dentist: ["Whitening", "Implants", "Braces"],
 };
 
 function colorOrFallback(value: string | undefined, fallback: string) {
@@ -73,24 +79,62 @@ function buildTheme(data: MockupData, variant: SectionVariant): ColorTheme {
   };
 }
 
+function cleanServices(data: MockupData) {
+  const raw = data.services?.filter(Boolean) || [];
+  const fallback = fallbackServices[data.industry] || fallbackServices.dentist;
+
+  if (raw.length === 0) {
+    return fallback;
+  }
+
+  return raw.slice(0, 3);
+}
+
+function industryFallbackDescription(data: MockupData, service: string) {
+  if (data.industry === "car") {
+    return `${service} presented with clear vehicle details, strong visuals, and a direct enquiry path.`;
+  }
+
+  if (data.industry === "salon") {
+    return `${service} shaped as a polished boutique treatment with visual proof and easy booking.`;
+  }
+
+  return `${service} explained with calm, trustworthy copy and a clear appointment path.`;
+}
+
 function serviceItems(data: MockupData): ServiceItem[] {
-  return data.services.map((service, index) => ({
+  const services = cleanServices(data);
+
+  return services.map((service, index) => ({
     title: service,
     description:
       data.serviceDescriptions?.[index] ||
-      industryServiceDescription(data, service),
-    image: data.serviceImages?.[index],
-    meta: data.industry === "car" ? "Featured" : "Service",
+      industryFallbackDescription(data, service),
+    image: data.serviceImages?.[index] || data.galleryImages?.[index],
+    meta:
+      data.industry === "car"
+        ? "Vehicle"
+        : data.industry === "salon"
+          ? "Treatment"
+          : "Care",
   }));
 }
 
 function vehicleItems(data: MockupData): VehicleItem[] {
-  return data.services.map((service, index) => ({
+  const services = cleanServices({
+    ...data,
+    services:
+      data.industry === "car"
+        ? data.services
+        : fallbackServices.car,
+  });
+
+  return services.map((service, index) => ({
     name: service,
     description:
       data.serviceDescriptions?.[index] ||
       "A polished vehicle option with clear terms, premium presentation, and a fast route to book or buy.",
-    image: data.serviceImages?.[index],
+    image: data.serviceImages?.[index] || data.galleryImages?.[index],
     price: index === 0 ? "From $140/day" : index === 1 ? "From $95/day" : "Quote ready",
     specs:
       index === 0
@@ -107,10 +151,10 @@ function testimonials(data: MockupData): TestimonialItem[] {
     quote,
     name:
       data.industry === "salon"
-        ? data.businessName + " Guest"
+        ? `${data.businessName} Guest`
         : data.industry === "car"
-          ? data.businessName + " Driver"
-          : data.businessName + " Patient",
+          ? `${data.businessName} Driver`
+          : `${data.businessName} Patient`,
   }));
 }
 
@@ -120,18 +164,6 @@ function contactItems(data: MockupData): ContactItem[] {
     { label: "Location", value: data.location || "Istanbul, Turkey" },
     { label: "Hours", value: data.workingHours || "Mon-Sat 09:00-18:00" },
   ];
-}
-
-function industryServiceDescription(data: MockupData, service: string) {
-  if (data.industry === "car") {
-    return service + " presented with strong visuals, clear vehicle details, and a direct enquiry path.";
-  }
-
-  if (data.industry === "salon") {
-    return service + " shaped as a polished boutique treatment with visual proof and easy booking.";
-  }
-
-  return service + " explained with calm, trustworthy copy and a clear appointment path.";
 }
 
 function aboutHighlights(data: MockupData) {
@@ -170,13 +202,21 @@ function gallerySubtitle(data: MockupData) {
   return "Clean visuals help the clinic feel credible, calm, and ready for patients.";
 }
 
+function servicesTitle(data: MockupData) {
+  if (data.servicesTitle) return data.servicesTitle;
+
+  if (data.industry === "car") return "Featured vehicles";
+  if (data.industry === "salon") return "Signature services";
+  return "Treatments made clear";
+}
+
 export default function MockupRenderer({ data }: { data: MockupData }) {
   const variant = variantFromStyle(data.style);
   const theme = buildTheme(data, variant);
   const logoText = data.logoText || data.businessName;
   const primaryCta = { label: data.mainCta || "Book Now", href: "#contact" };
   const secondaryCta = {
-    label: data.secondaryCta || (data.industry === "car" ? "View Cars" : "View Services"),
+    label: data.secondaryCta || (data.industry === "car" ? "View Fleet" : "View Services"),
     href: data.industry === "car" ? "#inventory" : "#services",
   };
 
@@ -200,7 +240,7 @@ export default function MockupRenderer({ data }: { data: MockupData }) {
         eyebrow={data.slogan || data.industry}
         title={data.heroHeadline || data.businessName}
         subtitle={data.heroDescription || data.shortDescription}
-        image={data.heroImage || data.backgroundImages?.[0]}
+        image={data.heroImage || data.galleryImages?.[0] || data.backgroundImages?.[0]}
         logoImage={data.logoImage}
         logoText={logoText}
         location={data.location}
@@ -215,7 +255,7 @@ export default function MockupRenderer({ data }: { data: MockupData }) {
         theme={theme}
         aiGenerated={Boolean(data.serviceDescriptions?.length)}
         industry={data.industry}
-        title={data.servicesTitle || (data.industry === "car" ? "Featured services" : "Services")}
+        title={servicesTitle(data)}
         subtitle={data.brandTone}
         items={serviceItems(data)}
       />
@@ -227,7 +267,10 @@ export default function MockupRenderer({ data }: { data: MockupData }) {
           aiGenerated={Boolean(data.serviceDescriptions?.length)}
           industry={data.industry}
           title="Featured cars ready for enquiry"
-          subtitle={data.layoutSuggestions || "A focused stock section for rental, sales, or viewing enquiries."}
+          subtitle={
+            data.layoutSuggestions ||
+            "A focused stock section for rental, sales, or viewing enquiries."
+          }
           categories={["SUV", "Sedan", "Luxury", "Electric"]}
           vehicles={vehicleItems(data)}
         />
@@ -240,7 +283,10 @@ export default function MockupRenderer({ data }: { data: MockupData }) {
         industry={data.industry}
         eyebrow={data.industry === "car" ? "Why choose us" : "About"}
         title={data.aboutTitle || "A clearer first impression"}
-        body={data.aboutText || "A focused section that gives visitors enough trust, taste, and context to take the next step."}
+        body={
+          data.aboutText ||
+          "A focused section that gives visitors enough trust, taste, and context to take the next step."
+        }
         image={data.teamImages?.[0] || data.galleryImages?.[0]}
         highlights={aboutHighlights(data)}
       />
@@ -270,7 +316,7 @@ export default function MockupRenderer({ data }: { data: MockupData }) {
         aiGenerated={Boolean(data.contactTitle)}
         industry={data.industry}
         title={data.contactTitle || "Ready for the next step"}
-        subtitle={data.audience ? "Built for " + data.audience + "." : undefined}
+        subtitle={data.audience ? `Built for ${data.audience}.` : undefined}
         items={contactItems(data)}
         cta={primaryCta}
       />
