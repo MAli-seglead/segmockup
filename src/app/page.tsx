@@ -79,6 +79,19 @@ const benefits = [
   "Fast sales presentation",
 ];
 
+function SegLeadLogo() {
+  return (
+    <span className="inline-flex items-center gap-3">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-sm border border-[#55f5c6]/35 bg-[#55f5c6] text-sm font-black uppercase tracking-[-0.02em] text-[#03110d] shadow-[0_0_28px_rgba(85,245,198,0.18)]">
+        SL
+      </span>
+      <span className="text-[12px] font-black uppercase tracking-[0.22em] text-white">
+        SegMockup
+      </span>
+    </span>
+  );
+}
+
 export default function Home() {
   return (
     <main className="min-h-screen overflow-hidden bg-[#020403] text-[#f7f6ed]">
@@ -89,9 +102,10 @@ export default function Home() {
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-5 py-5 md:px-8">
           <Link
             href="/"
-            className="text-[12px] font-black uppercase tracking-[0.22em] text-white"
+            className="transition hover:opacity-85"
+            aria-label="SegMockup home"
           >
-            SegMockup
+            <SegLeadLogo />
           </Link>
 
           <nav className="hidden items-center gap-7 text-[11px] font-semibold uppercase tracking-[0.15em] text-white/45 md:flex">
@@ -383,9 +397,7 @@ export default function Home() {
 
       <footer className="border-t border-white/[0.06] bg-[#020403] px-5 py-8 md:px-8">
         <div className="mx-auto flex max-w-7xl flex-col justify-between gap-3 text-[12px] text-white/35 md:flex-row md:items-center">
-          <p className="font-black uppercase tracking-[0.2em] text-white">
-            SegMockup
-          </p>
+          <SegLeadLogo />
 
           <p>Premium website mockup builder by SegLead.</p>
 
